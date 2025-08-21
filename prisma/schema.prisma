@@ -1,0 +1,325 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+// ===== PRODUCT MANAGEMENT =====
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  categoryId  Int?     @map("category_id")
+  name        String   @db.VarChar(150)
+  description String?  @db.Text
+  price       Decimal  @db.Decimal(10, 2)
+  stock       Int      @default(0)
+  imageUrl    String?  @map("image_url") @db.VarChar(255)
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  category       Category?       @relation(fields: [categoryId], references: [id])
+  promotions     Promotion[]
+  orderItems     OrderItem[]
+  stockMovements StockMovement[]
+
+  @@map("products")
+}
+
+model Promotion {
+  id             Int      @id @default(autoincrement())
+  productId      Int?     @map("product_id")
+  discountPercent Decimal  @map("discount_percent") @db.Decimal(5, 2)
+  startDate      DateTime @map("start_date") @db.Date
+  endDate        DateTime @map("end_date") @db.Date
+  isActive       Boolean  @default(true) @map("is_active")
+  maxUsage       Int?     @map("max_usage")
+  usageCount     Int      @default(0) @map("usage_count")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@map("promotions")
+}
+
+// ===== AUTHENTICATION =====
+
+model Customer {
+  id        Int       @id @default(autoincrement())
+  googleId  String    @unique @map("google_id") @db.VarChar(255)
+  name      String    @db.VarChar(150)
+  email     String    @unique @db.VarChar(150)
+  avatarUrl String?   @map("avatar_url") @db.VarChar(500)
+  phone     String?   @db.VarChar(20)
+  address   String?   @db.Text
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  googleTokens  GoogleToken[]
+  loginSessions LoginSession[]
+  orders        Order[]
+
+  @@map("customers")
+}
+
+model GoogleToken {
+  id             Int      @id @default(autoincrement())
+  customerId     Int      @map("customer_id")
+  accessToken    String   @map("access_token") @db.Text
+  refreshToken   String?  @map("refresh_token") @db.Text
+  tokenExpiresAt DateTime @map("token_expires_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("google_tokens")
+}
+
+model LoginSession {
+  id           String   @id @map("session_id") @db.VarChar(255)
+  customerId   Int      @map("customer_id")
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  userAgent    String?  @map("user_agent") @db.Text
+  lastActivity DateTime @default(now()) @map("last_activity")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("login_sessions")
+}
+
+// ===== ADMIN MANAGEMENT =====
+
+enum AdminRole {
+  SUPER_ADMIN @map("super_admin")
+  ADMIN       @map("admin")
+  MODERATOR   @map("moderator")
+
+  @@map("admin_role")
+}
+
+model Admin {
+  id          Int       @id @default(autoincrement())
+  username    String    @unique @db.VarChar(50)
+  email       String    @unique @db.VarChar(150)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  name        String    @db.VarChar(150)
+  role        AdminRole @default(ADMIN)
+  avatarUrl   String?   @map("avatar_url") @db.VarChar(500)
+  isActive    Boolean   @default(true) @map("is_active")
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  adminSessions    AdminSession[]
+  adminActivities  AdminActivity[]
+  adminPermissions AdminPermission[]
+  grantedPermissions AdminPermission[] @relation("GrantedBy")
+
+  @@map("admins")
+}
+
+model AdminSession {
+  id           String   @id @map("session_id") @db.VarChar(255)
+  adminId      Int      @map("admin_id")
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  userAgent    String?  @map("user_agent") @db.Text
+  lastActivity DateTime @default(now()) @map("last_activity")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_sessions")
+}
+
+model AdminActivity {
+  id         Int      @id @default(autoincrement())
+  adminId    Int      @map("admin_id")
+  action     String   @db.VarChar(100)
+  tableName  String?  @map("table_name") @db.VarChar(50)
+  recordId   Int?     @map("record_id")
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_activities")
+}
+
+model AdminPermission {
+  id             Int      @id @default(autoincrement())
+  adminId        Int      @map("admin_id")
+  permissionName String   @map("permission_name") @db.VarChar(100)
+  grantedBy      Int?     @map("granted_by")
+  grantedAt      DateTime @default(now()) @map("granted_at")
+
+  // Relations
+  admin     Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  grantedByAdmin Admin? @relation("GrantedBy", fields: [grantedBy], references: [id])
+
+  @@unique([adminId, permissionName])
+  @@map("admin_permissions")
+}
+
+// ===== ORDER MANAGEMENT =====
+
+enum OrderStatus {
+  PENDING_PAYMENT @map("pending_payment")
+  WAITING_CONFIRM @map("waiting_confirm")
+  PAID            @map("paid")
+  SHIPPING        @map("shipping")
+  COMPLETED       @map("completed")
+  CANCELLED       @map("cancelled")
+
+  @@map("order_status")
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  customerId  Int         @map("customer_id")
+  status      OrderStatus @default(PENDING_PAYMENT)
+  totalAmount Decimal     @map("total_amount") @db.Decimal(10, 2)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  orderItems OrderItem[]
+  payments   Payment[]
+  shippings  Shipping[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int     @map("order_id")
+  productId Int     @map("product_id")
+  quantity  Int
+  price     Decimal @db.Decimal(10, 2)
+
+  // Relations
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+enum PaymentStatus {
+  WAITING   @map("waiting")
+  CONFIRMED @map("confirmed")
+  REJECTED  @map("rejected")
+
+  @@map("payment_status")
+}
+
+model Payment {
+  id          Int           @id @default(autoincrement())
+  orderId     Int           @map("order_id")
+  amount      Decimal       @db.Decimal(10, 2)
+  paymentDate DateTime?     @map("payment_date")
+  slipUrl     String?       @map("slip_url") @db.VarChar(255)
+  status      PaymentStatus @default(WAITING)
+  confirmedAt DateTime?     @map("confirmed_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+enum ShippingStatus {
+  PREPARING @map("preparing")
+  SHIPPED   @map("shipped")
+  DELIVERED @map("delivered")
+
+  @@map("shipping_status")
+}
+
+model Shipping {
+  id             Int            @id @default(autoincrement())
+  orderId        Int            @map("order_id")
+  courier        String?        @db.VarChar(100)
+  trackingNumber String?        @map("tracking_number") @db.VarChar(100)
+  status         ShippingStatus @default(PREPARING)
+  shippedAt      DateTime?      @map("shipped_at")
+  deliveredAt    DateTime?      @map("delivered_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("shippings")
+}
+
+// ===== STOCK MANAGEMENT =====
+
+enum MovementType {
+  IN         @map("in")
+  OUT        @map("out")
+  ADJUSTMENT @map("adjustment")
+
+  @@map("movement_type")
+}
+
+enum ReferenceType {
+  PURCHASE   @map("purchase")
+  SALE       @map("sale")
+  ADJUSTMENT @map("adjustment")
+  RETURN     @map("return")
+
+  @@map("reference_type")
+}
+
+model StockMovement {
+  id            Int           @id @default(autoincrement())
+  productId     Int           @map("product_id")
+  type          MovementType
+  quantity      Int
+  referenceType ReferenceType @map("reference_type")
+  referenceId   Int?          @map("reference_id")
+  notes         String?       @db.Text
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("stock_movements")
+}
