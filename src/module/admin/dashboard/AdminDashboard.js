@@ -26,6 +26,11 @@ export default function AdminDashboard() {
         <Button type="primary" size="large">
           สินค้า
         </Button>
+      </Link>{" "}
+      <Link href="/admin/promotion" passHref legacyBehavior>
+        <Button type="primary" size="large">
+          โปรโมชั่น
+        </Button>
       </Link>
     </div>
   );
