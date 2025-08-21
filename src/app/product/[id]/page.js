@@ -67,6 +67,23 @@ export default function ProductDetailPage() {
         <p className="text-[#181411] text-base font-normal leading-normal pb-3 pt-1 px-4">
           {product.description}
         </p>
+
+        {/* ProductGallery Section */}
+        {product.galleries?.length > 0 && (
+          <div className="px-4 pb-4">
+            <h3 className="text-[#181411] text-lg font-bold leading-tight tracking-[-0.015em] pb-2 pt-2">Product Gallery</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {product.galleries.map((g) => (
+                <img
+                  key={g.id}
+                  src={g.imageUrl}
+                  alt="gallery"
+                  className="w-full aspect-square object-cover rounded border"
+                />
+              ))}
+            </div>
+          </div>
+        )}
         <h3 className="text-[#181411] text-lg font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-4">Details</h3>
         <div className="p-4 grid grid-cols-[20%_1fr] gap-x-6">
           <div className="col-span-2 grid grid-cols-subgrid border-t border-t-[#e5e0dc] py-5">
