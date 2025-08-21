@@ -241,9 +241,19 @@ CREATE UNIQUE INDEX "admins_email_key" ON "public"."admins"("email");
 -- CreateIndex
 CREATE UNIQUE INDEX "admin_permissions_admin_id_permission_name_key" ON "public"."admin_permissions"("admin_id", "permission_name");
 
--- AddForeignKey
 ALTER TABLE "public"."products" ADD CONSTRAINT "products_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- CreateTable ProductGallery
+CREATE TABLE "public"."product_galleries" (
+    "id" SERIAL NOT NULL,
+    "product_id" INTEGER NOT NULL,
+    "image_url" VARCHAR(255) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "product_galleries_pkey" PRIMARY KEY ("id")
+);
+
+-- AddForeignKey for ProductGallery
+ALTER TABLE "public"."product_galleries" ADD CONSTRAINT "product_galleries_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 -- AddForeignKey
 ALTER TABLE "public"."promotions" ADD CONSTRAINT "promotions_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 

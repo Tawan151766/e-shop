@@ -41,6 +41,7 @@ model Product {
   promotions     Promotion[]
   orderItems     OrderItem[]
   stockMovements StockMovement[]
+  galleries       ProductGallery[]
 
   @@map("products")
 }
@@ -61,6 +62,18 @@ model Promotion {
   product Product? @relation(fields: [productId], references: [id])
 
   @@map("promotions")
+}
+
+model ProductGallery {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  imageUrl  String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_galleries")
 }
 
 // ===== AUTHENTICATION =====
