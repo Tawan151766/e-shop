@@ -80,14 +80,14 @@ export default function CartSummary({ summary, onCheckout, onContinueShopping })
           onClick={onCheckout}
           className="w-full bg-[#eb9947] text-[#181411] py-3 px-4 rounded-lg font-bold text-base hover:bg-[#d88a3f] transition-colors"
         >
-          Proceed to Checkout
+          ดำเนินการชำระเงิน
         </button>
         
         <button
           onClick={onContinueShopping}
           className="w-full bg-gray-100 text-[#181411] py-3 px-4 rounded-lg font-medium text-base hover:bg-gray-200 transition-colors"
         >
-          Continue Shopping
+          เลือกซื้อสินค้าเพิ่ม
         </button>
       </div>
 

@@ -95,7 +95,7 @@ export default function ClientCartPage({ initialCart }) {
       return;
     }
     
-    // TODO: Navigate to checkout page
+    // Navigate to checkout page
     router.push("/checkout");
   };
 
