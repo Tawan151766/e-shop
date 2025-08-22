@@ -292,3 +292,44 @@ ALTER TABLE "public"."shippings" ADD CONSTRAINT "shippings_order_id_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "public"."stock_movements" ADD CONSTRAINT "stock_movements_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- Migration: เพิ่ม Cart และ CartItem tables
+
+-- CreateTable Cart
+CREATE TABLE "public"."carts" (
+    "id" SERIAL NOT NULL,
+    "customer_id" INTEGER NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "carts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable CartItem
+CREATE TABLE "public"."cart_items" (
+    "id" SERIAL NOT NULL,
+    "cart_id" INTEGER NOT NULL,
+    "product_id" INTEGER NOT NULL,
+    "quantity" INTEGER NOT NULL DEFAULT 1,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "cart_items_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex: หนึ่ง customer มีหนึ่ง cart เท่านั้น
+CREATE UNIQUE INDEX "carts_customer_id_key" ON "public"."carts"("customer_id");
+
+-- CreateIndex: ไม่ให้ซ้ำสินค้าใน cart เดียวกัน
+CREATE UNIQUE INDEX "cart_items_cart_id_product_id_key" ON "public"."cart_items"("cart_id", "product_id");
+
+-- AddForeignKey: Cart belongs to Customer
+ALTER TABLE "public"."carts" ADD CONSTRAINT "carts_customer_id_fkey" 
+FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey: CartItem belongs to Cart
+ALTER TABLE "public"."cart_items" ADD CONSTRAINT "cart_items_cart_id_fkey" 
+FOREIGN KEY ("cart_id") REFERENCES "public"."carts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey: CartItem references Product
+ALTER TABLE "public"."cart_items" ADD CONSTRAINT "cart_items_product_id_fkey" 
+FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE ON UPDATE CASCADE;

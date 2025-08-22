@@ -1,18 +1,49 @@
+// src/module/shop/ShopHeader.js
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function ShopHeader() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [cartCount, setCartCount] = useState(0);
+
+  // ดึงจำนวนสินค้าในตะกร้า
+  useEffect(() => {
+    if (session) {
+      fetchCartCount();
+    } else {
+      setCartCount(0);
+    }
+  }, [session]);
+
+  // ฟังการอัปเดต cart
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      if (session) {
+        fetchCartCount();
+      }
+    };
+
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    return () => window.removeEventListener('cartUpdated', handleCartUpdate);
+  }, [session]);
+
+  const fetchCartCount = async () => {
+    try {
+      const response = await fetch("/api/cart/count");
+      const data = await response.json();
+      setCartCount(data.count || 0);
+    } catch (error) {
+      console.error("Failed to fetch cart count:", error);
+    }
+  };
 
   const handleAuthAction = () => {
     if (session) {
-      // If logged in, show user menu or sign out
       signOut();
     } else {
-      // If not logged in, redirect to sign in
       signIn("google");
     }
   };
@@ -21,7 +52,6 @@ export default function ShopHeader() {
     if (session) {
       router.push("/cart");
     } else {
-      // Redirect to login first
       router.push("/auth/signin?callbackUrl=/cart");
     }
   };
@@ -36,10 +66,8 @@ export default function ShopHeader() {
         {/* User Profile/Login Section */}
         <div className="flex items-center gap-2">
           {status === "loading" ? (
-            // Loading state
             <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
           ) : session ? (
-            // Logged in user
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 cursor-pointer" onClick={handleAuthAction}>
                 {session.user?.image ? (
@@ -58,7 +86,6 @@ export default function ShopHeader() {
                 </span>
               </div>
               
-              {/* Dropdown menu (optional) */}
               <div className="relative group">
                 <button className="p-1 rounded-full hover:bg-gray-100">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
@@ -66,7 +93,6 @@ export default function ShopHeader() {
                   </svg>
                 </button>
                 
-                {/* Dropdown content */}
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="py-2">
                     <button 
@@ -102,7 +128,6 @@ export default function ShopHeader() {
               </div>
             </div>
           ) : (
-            // Not logged in
             <button
               onClick={() => signIn("google")}
               className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
@@ -121,15 +146,14 @@ export default function ShopHeader() {
           className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 bg-transparent text-[#181411] gap-2 text-base font-bold leading-normal tracking-[0.015em] min-w-0 p-0 relative hover:bg-gray-50 transition-colors"
         >
           <div className="text-[#181411] relative">
-            {/* Shopping Bag Icon */}
             <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
               <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,160H40V56H216V200ZM176,88a48,48,0,0,1-96,0,8,8,0,0,1,16,0,32,32,0,0,0,64,0,8,8,0,0,1,16,0Z" />
             </svg>
             
-            {/* Cart Badge (optional - you can add cart item count here) */}
-            {session && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                0
+            {/* Cart Badge with Dynamic Count */}
+            {session && cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium min-w-[20px]">
+                {cartCount > 99 ? "99+" : cartCount}
               </span>
             )}
           </div>

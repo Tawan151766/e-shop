@@ -42,7 +42,8 @@ model Product {
   orderItems     OrderItem[]
   stockMovements StockMovement[]
   galleries       ProductGallery[]
-
+  cartItems      CartItem[]
+  
   @@map("products")
 }
 
@@ -94,6 +95,7 @@ model Customer {
   googleTokens  GoogleToken[]
   loginSessions LoginSession[]
   orders        Order[]
+  cart          Cart?  
 
   @@map("customers")
 }
@@ -335,4 +337,33 @@ model StockMovement {
   product Product @relation(fields: [productId], references: [id])
 
   @@map("stock_movements")
+}
+model Cart {
+  id         Int      @id @default(autoincrement())
+  customerId Int      @map("customer_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  customer  Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  cartItems CartItem[]
+
+  @@unique([customerId]) // หนึ่ง customer มีหนึ่ง cart
+  @@map("carts")
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int      @map("cart_id")
+  productId Int      @map("product_id")
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId]) // ไม่ให้ซ้ำสินค้าใน cart เดียวกัน
+  @@map("cart_items")
 }
