@@ -7,13 +7,14 @@ import PaymentMethods from "@/module/payment/PaymentMethods";
 import OrderDetails from "@/module/payment/OrderDetails";
 import BankTransferInfo from "@/module/payment/BankTransferInfo";
 import SlipUpload from "@/module/payment/SlipUpload";
+import { message } from "antd";
 
 export default function ClientPaymentPage({ paymentData }) {
   const router = useRouter();
   const [selectedMethod, setSelectedMethod] = useState("bank_transfer");
   const [paymentStatus, setPaymentStatus] = useState(paymentData.status);
   const [isUploading, setIsUploading] = useState(false);
-
+  const [messageApi, contextHolder] = message.useMessage();
   // Poll payment status every 30 seconds
   useEffect(() => {
     if (paymentStatus === "WAITING") {
@@ -21,11 +22,11 @@ export default function ClientPaymentPage({ paymentData }) {
         try {
           const response = await fetch(`/api/payment/${paymentData.id}/status`);
           const data = await response.json();
-          
+
           if (data.status !== "WAITING") {
             setPaymentStatus(data.status);
             clearInterval(interval);
-            
+
             if (data.status === "CONFIRMED") {
               router.push(`/order/success/${paymentData.order.id}`);
             } else if (data.status === "REJECTED") {
@@ -43,7 +44,7 @@ export default function ClientPaymentPage({ paymentData }) {
 
   const handleSlipUpload = async (file) => {
     setIsUploading(true);
-    
+
     try {
       const formData = new FormData();
       formData.append("slip", file);
@@ -55,17 +56,25 @@ export default function ClientPaymentPage({ paymentData }) {
       });
 
       const data = await response.json();
-      
+
       if (response.ok && data.success) {
-        alert("อัปโหลดสลิปสำเร็จ! รอการตรวจสอบจากเจ้าหน้าที่");
-        // Refresh page to show updated status
+        messageApi.open({
+          type: "success",
+          content: "อัปโหลดสลิปสำเร็จ! รอการตรวจสอบจากเจ้าหน้าที่",
+        });
         window.location.reload();
       } else {
-        alert(data.error || "เกิดข้อผิดพลาดในการอัปโหลดสลิป");
+        messageApi.open({
+          type: "error",
+          content: data.error || "เกิดข้อผิดพลาดในการอัปโหลดสลิป",
+        });
       }
     } catch (error) {
       console.error("Upload error:", error);
-      alert("เกิดข้อผิดพลาดในการอัปโหลดสลิป");
+      messageApi.open({
+        type: "error",
+        content: "เกิดข้อผิดพลาดในการอัปโหลดสลิป",
+      });
     } finally {
       setIsUploading(false);
     }
@@ -73,11 +82,12 @@ export default function ClientPaymentPage({ paymentData }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <PaymentHeader 
+      {contextHolder}
+      <PaymentHeader
         orderId={paymentData.order.id}
-        onBack={() => router.back()} 
+        onBack={() => router.back()}
       />
-      
+
       <div className="max-w-4xl mx-auto p-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Payment Methods */}
@@ -88,7 +98,7 @@ export default function ClientPaymentPage({ paymentData }) {
               amount={paymentData.amount}
             />
 
-            <BankTransferInfo 
+            <BankTransferInfo
               amount={paymentData.amount}
               orderId={paymentData.order.id}
             />
@@ -103,10 +113,7 @@ export default function ClientPaymentPage({ paymentData }) {
 
           {/* Right Column - Order Details */}
           <div>
-            <OrderDetails 
-              order={paymentData.order}
-              payment={paymentData}
-            />
+            <OrderDetails order={paymentData.order} payment={paymentData} />
           </div>
         </div>
       </div>

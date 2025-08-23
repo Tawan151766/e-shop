@@ -1,6 +1,7 @@
 // src/module/product/AddToCartButton.js
 "use client";
 import { useState } from "react";
+import { message } from "antd";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -9,7 +10,7 @@ export default function AddToCartButton({ product, onClick }) {
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
-
+  const [messageApi, contextHolder] = message.useMessage();
   const handleAddToCart = async () => {
     if (!session) {
       router.push("/auth/signin?callbackUrl=" + window.location.pathname);
@@ -17,7 +18,7 @@ export default function AddToCartButton({ product, onClick }) {
     }
 
     if (product.stock < quantity) {
-      alert("สินค้าไม่เพียงพอ");
+      message.error("สินค้าไม่เพียงพอ");
       return;
     }
 
@@ -35,14 +36,23 @@ export default function AddToCartButton({ product, onClick }) {
       });
 
       if (response.ok) {
-        alert("เพิ่มสินค้าลงตะกร้าเรียบร้อยแล้ว");
+        messageApi.open({
+          type: "success",
+          content: "เพิ่มสินค้าลงตะกร้าเรียบร้อยแล้ว",
+        });
         if (onClick) onClick();
       } else {
-        alert("เกิดข้อผิดพลาด กรุณาลองใหม่");
+        messageApi.open({
+          type: "error",
+          content: "เกิดข้อผิดพลาด กรุณาลองใหม่",
+        });
       }
     } catch (error) {
       console.error("Add to cart error:", error);
-      alert("เกิดข้อผิดพลาด กรุณาลองใหม่");
+      messageApi.open({
+        type: "error",
+        content: "เกิดข้อผิดพลาด กรุณาลองใหม่",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -53,6 +63,7 @@ export default function AddToCartButton({ product, onClick }) {
   return (
     <div className="flex flex-col w-full gap-4 bg-white ">
       {/* Quantity Selector */}
+      {contextHolder}
       <label className="flex flex-col min-w-40 flex-1">
         <p className="text-[#181411] text-base font-semibold pb-2">Quantity</p>
         <input
