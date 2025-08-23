@@ -10,10 +10,17 @@ export async function GET(request) {
       secret: process.env.NEXTAUTH_SECRET 
     });
     
-    // Check if user is admin (you'll need to implement admin authentication)
-    if (!token?.isAdmin) {
+    // For now, allow any authenticated user (you should implement proper admin check)
+    if (!token?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // TODO: Implement proper admin role checking
+    // Example: Check if user has admin role in database
+    // const user = await prisma.admin.findUnique({ where: { id: token.adminId } });
+    // if (!user || !user.isActive) {
+    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // }
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'WAITING';

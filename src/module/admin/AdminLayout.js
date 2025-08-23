@@ -5,6 +5,7 @@ import {
   TagsOutlined,
   ShoppingOutlined,
   PercentageOutlined,
+  CreditCardOutlined,
   LogoutOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
@@ -32,6 +33,11 @@ const adminMenu = [
     key: "/admin/promotion",
     icon: <PercentageOutlined />,
     label: <Link href="/admin/promotion">โปรโมชั่น</Link>,
+  },
+  {
+    key: "/admin/payment",
+    icon: <CreditCardOutlined />,
+    label: <Link href="/admin/payment">การชำระเงิน</Link>,
   },
   // เพิ่มเมนูอื่น ๆ ได้ที่นี่
   {
