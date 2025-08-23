@@ -8,7 +8,6 @@ import { useCallback } from "react";
 import Pagination from "@/module/shop/Pagination";
 import HeroBanner from "@/module/shop/HeroBanner";
 import LoadingSpinner from "@/module/shop/LoadingSpinner";
-import ShopFooter from "@/module/shop/ShopFooter";
 
 export default function MainModule() {
   const [categories, setCategories] = useState([]);
@@ -22,13 +21,12 @@ export default function MainModule() {
 
   // ดึงหมวดหมู่และโปรโมชันครั้งเดียว
   useEffect(() => {
-    Promise.all([
-      axios.get("/api/home"),
-      axios.get("/api/promotions"),
-    ]).then(([homeRes, promoRes]) => {
-      setCategories(homeRes.data.categories || []);
-      setPromoProducts(promoRes.data.products || []);
-    });
+    Promise.all([axios.get("/api/home"), axios.get("/api/promotions")]).then(
+      ([homeRes, promoRes]) => {
+        setCategories(homeRes.data.categories || []);
+        setPromoProducts(promoRes.data.products || []);
+      }
+    );
   }, []);
 
   // ดึงสินค้าตาม page/category
@@ -62,7 +60,6 @@ export default function MainModule() {
 
   return (
     <>
-      <ShopHeader />
       <CategoryFilterBar
         categories={categories}
         selectedCategory={selectedCategory}
@@ -77,10 +74,13 @@ export default function MainModule() {
             Featured
           </h2>
           <ProductGrid products={products} />
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         </>
       )}
-      <ShopFooter />
     </>
   );
 }
