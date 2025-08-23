@@ -11,7 +11,7 @@ export async function PUT(request, { params }) {
     // }
 
     const { orderId } = params;
-    const { status } = await request.json();
+    const { status, paymentVerified, verifiedAt } = await request.json();
 
     // Validate status
     const validStatuses = [
@@ -64,13 +64,27 @@ export async function PUT(request, { params }) {
       }
     }
 
+    // Prepare update data
+    const updateData = {
+      status,
+      updatedAt: new Date(),
+    };
+
+    // Add payment verification data if provided
+    if (paymentVerified !== undefined) {
+      updateData.paymentVerified = paymentVerified;
+      if (verifiedAt) {
+        updateData.verifiedAt = new Date(verifiedAt);
+      }
+      if (status === "PAID") {
+        updateData.paidAt = new Date();
+      }
+    }
+
     // Update order status
     const updatedOrder = await prisma.order.update({
       where: { id: parseInt(orderId) },
-      data: {
-        status,
-        updatedAt: new Date(),
-      },
+      data: updateData,
       include: {
         customer: {
           select: {

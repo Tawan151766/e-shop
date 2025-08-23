@@ -6,6 +6,7 @@ import {
   ShoppingOutlined,
   PercentageOutlined,
   CreditCardOutlined,
+  TruckOutlined,
   LogoutOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
@@ -43,6 +44,11 @@ const adminMenu = [
     key: "/admin/order",
     icon: <ShoppingOutlined />,
     label: <Link href="/admin/order">คำสั่งซื้อ</Link>,
+  },
+  {
+    key: "/admin/shipping",
+    icon: <TruckOutlined />,
+    label: <Link href="/admin/shipping">การจัดส่ง</Link>,
   },
   {
     key: "logout",

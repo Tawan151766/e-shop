@@ -23,15 +23,29 @@ export async function GET(request) {
     // }
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') || 'WAITING';
+    const status = searchParams.get('status');
+    const orderId = searchParams.get('orderId');
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = parseInt(searchParams.get('pageSize') || '20', 10);
     const skip = (page - 1) * pageSize;
 
+    // Build where clause
+    const where = {};
+    if (status) {
+      where.status = status;
+    }
+    if (orderId) {
+      where.orderId = parseInt(orderId);
+    }
+    // Default to WAITING if no specific filters
+    if (!status && !orderId) {
+      where.status = 'WAITING';
+    }
+
     // Get payments with order details
     const [payments, total] = await Promise.all([
       prisma.payment.findMany({
-        where: { status },
+        where,
         include: {
           order: {
             include: {
@@ -61,7 +75,7 @@ export async function GET(request) {
         skip,
         take: pageSize,
       }),
-      prisma.payment.count({ where: { status } }),
+      prisma.payment.count({ where }),
     ]);
 
     return NextResponse.json({
