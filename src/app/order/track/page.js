@@ -1,14 +1,16 @@
 // src/app/order/track/page.js
 "use client";
 import { useState } from "react";
-import { Card, Input, Button, message } from "antd";
-import { SearchOutlined } from "@ant-design/icons";
+import { Card, Input, Button, message, Space, Divider } from "antd";
+import { SearchOutlined, HistoryOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 export default function OrderTrackPage() {
   const [orderId, setOrderId] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { data: session } = useSession();
 
   const handleTrackOrder = async () => {
     if (!orderId.trim()) {
@@ -32,6 +34,10 @@ export default function OrderTrackPage() {
     }
   };
 
+  const handleViewHistory = () => {
+    router.push("/order/history");
+  };
+
   return (
     <div style={{ 
       minHeight: "60vh", 
@@ -42,7 +48,7 @@ export default function OrderTrackPage() {
     }}>
       <Card 
         title="ติดตามคำสั่งซื้อ" 
-        style={{ width: "100%", maxWidth: 400 }}
+        style={{ width: "100%", maxWidth: 450 }}
       >
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: "block", marginBottom: 8 }}>
@@ -67,6 +73,21 @@ export default function OrderTrackPage() {
         >
           ติดตามคำสั่งซื้อ
         </Button>
+
+        {session && (
+          <>
+            <Divider>หรือ</Divider>
+            <Button
+              type="default"
+              icon={<HistoryOutlined />}
+              onClick={handleViewHistory}
+              size="large"
+              block
+            >
+              ดูประวัติการสั่งซื้อทั้งหมด
+            </Button>
+          </>
+        )}
         
         <div style={{ marginTop: 16, fontSize: 12, color: "#666" }}>
           <p>💡 คุณสามารถค้นหาหมายเลขคำสั่งซื้อได้จาก:</p>

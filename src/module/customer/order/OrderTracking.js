@@ -11,6 +11,7 @@ import {
   Spin,
   Timeline,
   Empty,
+  Image,
 } from "antd";
 import {
   CheckCircleOutlined,
@@ -23,6 +24,8 @@ import axios from "axios";
 export default function OrderTracking({ orderId }) {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [orderPayment, setOrderPayment] = useState(null);
+  const [orderShipping, setOrderShipping] = useState(null);
 
   // Order Status Configuration
   const ORDER_STATUS = {
@@ -71,6 +74,24 @@ export default function OrderTracking({ orderId }) {
     try {
       const res = await axios.get(`/api/customer/orders/${orderId}`);
       setOrder(res.data.order);
+
+      // Also fetch payment and shipping details
+      try {
+        const [paymentRes, shippingRes] = await Promise.allSettled([
+          axios.get(`/api/customer/payments?orderId=${orderId}`),
+          axios.get(`/api/customer/shipping?orderId=${orderId}`)
+        ]);
+
+        if (paymentRes.status === 'fulfilled') {
+          setOrderPayment(paymentRes.value.data.payments?.[0] || null);
+        }
+
+        if (shippingRes.status === 'fulfilled') {
+          setOrderShipping(shippingRes.value.data.shippings?.[0] || null);
+        }
+      } catch (detailError) {
+        console.error("Error fetching order details:", detailError);
+      }
     } catch (error) {
       console.error("Error fetching order:", error);
       message.error("ไม่พบข้อมูลคำสั่งซื้อ");
@@ -81,7 +102,7 @@ export default function OrderTracking({ orderId }) {
 
   useEffect(() => {
     fetchOrder();
-  }, [orderId]);
+  }, [fetchOrder, orderId]);
 
   const getStatusConfig = (status) => ORDER_STATUS[status] || ORDER_STATUS.PENDING_PAYMENT;
 
@@ -212,6 +233,84 @@ export default function OrderTracking({ orderId }) {
         </Descriptions>
       </Card>
 
+      {/* Payment and Shipping Information */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
+        {/* Payment Information */}
+        <Card title="ข้อมูลการชำระเงิน" style={{ flex: 1 }}>
+          {orderPayment ? (
+            <Descriptions column={1} size="small">
+              <Descriptions.Item label="สถานะ">
+                <Tag color={
+                  orderPayment.status === "CONFIRMED" ? "green" :
+                  orderPayment.status === "REJECTED" ? "red" : "orange"
+                }>
+                  {orderPayment.status === "CONFIRMED" ? "ยืนยันแล้ว" :
+                   orderPayment.status === "REJECTED" ? "ปฏิเสธ" : "รอตรวจสอบ"}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="จำนวนเงิน">
+                ฿{Number(orderPayment.amount).toLocaleString()}
+              </Descriptions.Item>
+              <Descriptions.Item label="วันที่ชำระ">
+                {orderPayment.paymentDate 
+                  ? new Date(orderPayment.paymentDate).toLocaleString("th-TH")
+                  : "ยังไม่ได้ชำระ"}
+              </Descriptions.Item>
+              {orderPayment.slipUrl && (
+                <Descriptions.Item label="หลักฐาน">
+                  <Image
+                    src={orderPayment.slipUrl}
+                    alt="Payment Slip"
+                    style={{ maxWidth: 100, maxHeight: 100 }}
+                    preview={{ mask: "ดูรูปเต็ม" }}
+                  />
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          ) : (
+            <div style={{ textAlign: "center", color: "#999", padding: 20 }}>
+              ยังไม่มีข้อมูลการชำระเงิน
+            </div>
+          )}
+        </Card>
+
+        {/* Shipping Information */}
+        <Card title="ข้อมูลการจัดส่ง" style={{ flex: 1 }}>
+          {orderShipping ? (
+            <Descriptions column={1} size="small">
+              <Descriptions.Item label="สถานะ">
+                <Tag color={
+                  orderShipping.status === "DELIVERED" ? "green" :
+                  orderShipping.status === "SHIPPED" ? "blue" : "orange"
+                }>
+                  {orderShipping.status === "DELIVERED" ? "จัดส่งสำเร็จ" :
+                   orderShipping.status === "SHIPPED" ? "จัดส่งแล้ว" : "เตรียมสินค้า"}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="บริษัทขนส่ง">
+                {orderShipping.courier || "-"}
+              </Descriptions.Item>
+              <Descriptions.Item label="หมายเลขติดตาม">
+                {orderShipping.trackingNumber ? (
+                  <span style={{ fontFamily: "monospace", backgroundColor: "#f5f5f5", padding: "2px 6px", borderRadius: 4 }}>
+                    {orderShipping.trackingNumber}
+                  </span>
+                ) : "-"}
+              </Descriptions.Item>
+              <Descriptions.Item label="วันที่จัดส่ง">
+                {orderShipping.shippedAt 
+                  ? new Date(orderShipping.shippedAt).toLocaleString("th-TH")
+                  : "ยังไม่ได้จัดส่ง"}
+              </Descriptions.Item>
+            </Descriptions>
+          ) : (
+            <div style={{ textAlign: "center", color: "#999", padding: 20 }}>
+              ยังไม่มีข้อมูลการจัดส่ง
+            </div>
+          )}
+        </Card>
+      </div>
+
       {/* Order Items */}
       <Card title="รายการสินค้า">
         <Table
@@ -260,7 +359,9 @@ export default function OrderTracking({ orderId }) {
                   <strong>รวมทั้งสิ้น</strong>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell align="right">
-                  <strong>฿{total.toLocaleString()}</strong>
+                  <strong style={{ color: "#52c41a", fontSize: 16 }}>
+                    ฿{total.toLocaleString()}
+                  </strong>
                 </Table.Summary.Cell>
               </Table.Summary.Row>
             );
