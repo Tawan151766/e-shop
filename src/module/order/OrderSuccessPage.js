@@ -156,7 +156,15 @@ export default function OrderSuccessPage({ orderData }) {
           </button>
           
           <button
-            onClick={() => router.push("/orders")}
+            onClick={() => router.push(`/order/track/${orderData.id}`)}
+            className="w-full bg-green-100 text-green-700 py-3 px-4 rounded-lg font-medium hover:bg-green-200 transition-colors flex items-center justify-center gap-2"
+          >
+            <Truck className="w-5 h-5" />
+            ติดตามคำสั่งซื้อ
+          </button>
+          
+          <button
+            onClick={() => router.push("/order/history")}
             className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
           >
             <ShoppingBag className="w-5 h-5" />

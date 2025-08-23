@@ -39,7 +39,11 @@ const adminMenu = [
     icon: <CreditCardOutlined />,
     label: <Link href="/admin/payment">การชำระเงิน</Link>,
   },
-  // เพิ่มเมนูอื่น ๆ ได้ที่นี่
+  {
+    key: "/admin/order",
+    icon: <ShoppingOutlined />,
+    label: <Link href="/admin/order">คำสั่งซื้อ</Link>,
+  },
   {
     key: "logout",
     icon: <LogoutOutlined />,
@@ -52,7 +56,15 @@ export default function AdminLayout({ children }) {
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Sider width={220} style={{ background: "#fff" }} breakpoint="lg">
-        <div style={{ height: 64, margin: 16, fontWeight: 700, fontSize: 22, textAlign: "center" }}>
+        <div
+          style={{
+            height: 64,
+            margin: 16,
+            fontWeight: 700,
+            fontSize: 22,
+            textAlign: "center",
+          }}
+        >
           Admin Panel
         </div>
         <Menu
@@ -63,7 +75,9 @@ export default function AdminLayout({ children }) {
         />
       </Sider>
       <Layout>
-        <Content style={{ margin: 0, background: "#f0f2f5", minHeight: "100vh" }}>
+        <Content
+          style={{ margin: 0, background: "#f0f2f5", minHeight: "100vh" }}
+        >
           <div style={{ padding: 24 }}>{children}</div>
         </Content>
       </Layout>

@@ -1,0 +1,368 @@
+// src/module/admin/order/AdminOrderManager.js
+"use client";
+import { useEffect, useState } from "react";
+import {
+  Table,
+  Button,
+  Modal,
+  message,
+  Space,
+  Tag,
+  Descriptions,
+  Card,
+  Tabs,
+  Select,
+  Timeline,
+  Steps,
+} from "antd";
+import {
+  EyeOutlined,
+  EditOutlined,
+  ReloadOutlined,
+  TruckOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+} from "@ant-design/icons";
+import axios from "axios";
+import OrderStatistics from "./OrderStatistics";
+
+const { Option } = Select;
+
+export default function AdminOrderManager() {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("ALL");
+
+  // Order Status Configuration
+  const ORDER_STATUS = {
+    PENDING_PAYMENT: { label: "รอชำระเงิน", color: "orange", step: 0 },
+    WAITING_CONFIRM: { label: "รอยืนยัน", color: "blue", step: 1 },
+    PAID: { label: "ชำระแล้ว", color: "green", step: 2 },
+    SHIPPING: { label: "กำลังจัดส่ง", color: "purple", step: 3 },
+    COMPLETED: { label: "เสร็จสิ้น", color: "success", step: 4 },
+    CANCELLED: { label: "ยกเลิก", color: "red", step: -1 },
+  };
+
+  const fetchOrders = async (status = "ALL") => {
+    setLoading(true);
+    try {
+      const params = status === "ALL" ? {} : { status };
+      const res = await axios.get("/api/admin/orders", { params });
+      setOrders(res.data.orders || []);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      message.error("โหลดข้อมูลไม่สำเร็จ");
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders(activeTab);
+  }, [activeTab]);
+
+  const handleViewOrder = (order) => {
+    setSelectedOrder(order);
+    setModalOpen(true);
+  };
+
+  const handleUpdateStatus = async (orderId, newStatus) => {
+    setUpdateLoading(true);
+    try {
+      await axios.put(`/api/admin/orders/${orderId}/status`, {
+        status: newStatus
+      });
+      
+      message.success("อัปเดตสถานะสำเร็จ");
+      setModalOpen(false);
+      fetchOrders(activeTab);
+    } catch (error) {
+      message.error("อัปเดตสถานะไม่สำเร็จ");
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  const getStatusConfig = (status) => ORDER_STATUS[status] || ORDER_STATUS.PENDING_PAYMENT;
+
+  const columns = [
+    {
+      title: "หมายเลขคำสั่งซื้อ",
+      dataIndex: "id",
+      key: "id",
+      width: 120,
+      render: (id) => `#${id}`,
+    },
+    {
+      title: "ลูกค้า",
+      dataIndex: ["customer", "name"],
+      key: "customerName",
+      width: 150,
+    },
+    {
+      title: "อีเมล",
+      dataIndex: ["customer", "email"],
+      key: "customerEmail",
+      width: 200,
+    },
+    {
+      title: "ยอดรวม",
+      dataIndex: "totalAmount",
+      key: "totalAmount",
+      width: 120,
+      render: (amount) => `฿${Number(amount).toLocaleString()}`,
+    },
+    {
+      title: "สถานะ",
+      dataIndex: "status",
+      key: "status",
+      width: 130,
+      render: (status) => {
+        const config = getStatusConfig(status);
+        return <Tag color={config.color}>{config.label}</Tag>;
+      },
+    },
+    {
+      title: "วันที่สั่งซื้อ",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      width: 150,
+      render: (date) => new Date(date).toLocaleDateString('th-TH'),
+    },
+    {
+      title: "การดำเนินการ",
+      key: "actions",
+      width: 150,
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
+            size="small"
+            onClick={() => handleViewOrder(record)}
+          >
+            ดูรายละเอียด
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
+  const tabItems = [
+    { key: "ALL", label: "ทั้งหมด" },
+    { key: "PENDING_PAYMENT", label: "รอชำระเงิน" },
+    { key: "WAITING_CONFIRM", label: "รอยืนยัน" },
+    { key: "PAID", label: "ชำระแล้ว" },
+    { key: "SHIPPING", label: "กำลังจัดส่ง" },
+    { key: "COMPLETED", label: "เสร็จสิ้น" },
+    { key: "CANCELLED", label: "ยกเลิก" },
+  ];
+
+  const getOrderProgress = (status) => {
+    const config = getStatusConfig(status);
+    if (config.step === -1) return { current: 0, status: "error" };
+    return { current: config.step, status: "process" };
+  };
+
+  const getNextStatusOptions = (currentStatus) => {
+    const transitions = {
+      PENDING_PAYMENT: ["WAITING_CONFIRM", "CANCELLED"],
+      WAITING_CONFIRM: ["PAID", "CANCELLED"],
+      PAID: ["SHIPPING", "CANCELLED"],
+      SHIPPING: ["COMPLETED"],
+      COMPLETED: [],
+      CANCELLED: [],
+    };
+    return transitions[currentStatus] || [];
+  };
+
+  return (
+    <div style={{ padding: 24 }}>
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center",
+        marginBottom: 16 
+      }}>
+        <h2>จัดการคำสั่งซื้อ</h2>
+        <Button 
+          icon={<ReloadOutlined />} 
+          onClick={() => fetchOrders(activeTab)}
+          loading={loading}
+        >
+          รีเฟรช
+        </Button>
+      </div>
+
+      <OrderStatistics />
+
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={tabItems}
+        style={{ marginBottom: 16 }}
+      />
+
+      <Table
+        columns={columns}
+        dataSource={orders}
+        rowKey="id"
+        loading={loading}
+        pagination={{ pageSize: 20 }}
+        scroll={{ x: 1000 }}
+      />
+
+      {/* Order Detail Modal */}
+      <Modal
+        title={`รายละเอียดคำสั่งซื้อ #${selectedOrder?.id}`}
+        open={modalOpen}
+        onCancel={() => setModalOpen(false)}
+        width={900}
+        footer={[
+          <Button key="close" onClick={() => setModalOpen(false)}>
+            ปิด
+          </Button>,
+        ]}
+      >
+        {selectedOrder && (
+          <div>
+            {/* Order Progress */}
+            <Card title="สถานะคำสั่งซื้อ" style={{ marginBottom: 16 }}>
+              <Steps
+                {...getOrderProgress(selectedOrder.status)}
+                items={[
+                  {
+                    title: "รอชำระเงิน",
+                    icon: <ClockCircleOutlined />,
+                  },
+                  {
+                    title: "รอยืนยัน",
+                    icon: <CheckCircleOutlined />,
+                  },
+                  {
+                    title: "ชำระแล้ว",
+                    icon: <CheckCircleOutlined />,
+                  },
+                  {
+                    title: "กำลังจัดส่ง",
+                    icon: <TruckOutlined />,
+                  },
+                  {
+                    title: "เสร็จสิ้น",
+                    icon: <CheckCircleOutlined />,
+                  },
+                ]}
+              />
+              
+              {/* Status Update */}
+              <div style={{ marginTop: 16 }}>
+                <Space>
+                  <span>อัปเดตสถานะ:</span>
+                  <Select
+                    value={selectedOrder.status}
+                    style={{ width: 200 }}
+                    onChange={(value) => handleUpdateStatus(selectedOrder.id, value)}
+                    loading={updateLoading}
+                  >
+                    <Option value={selectedOrder.status} disabled>
+                      {getStatusConfig(selectedOrder.status).label} (ปัจจุบัน)
+                    </Option>
+                    {getNextStatusOptions(selectedOrder.status).map(status => (
+                      <Option key={status} value={status}>
+                        {getStatusConfig(status).label}
+                      </Option>
+                    ))}
+                  </Select>
+                </Space>
+              </div>
+            </Card>
+
+            {/* Order Information */}
+            <Card title="ข้อมูลคำสั่งซื้อ" style={{ marginBottom: 16 }}>
+              <Descriptions column={2} bordered size="small">
+                <Descriptions.Item label="หมายเลขคำสั่งซื้อ" span={1}>
+                  #{selectedOrder.id}
+                </Descriptions.Item>
+                <Descriptions.Item label="สถานะ" span={1}>
+                  <Tag color={getStatusConfig(selectedOrder.status).color}>
+                    {getStatusConfig(selectedOrder.status).label}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="ยอดรวม" span={1}>
+                  ฿{Number(selectedOrder.totalAmount).toLocaleString()}
+                </Descriptions.Item>
+                <Descriptions.Item label="วันที่สั่งซื้อ" span={1}>
+                  {new Date(selectedOrder.createdAt).toLocaleString("th-TH")}
+                </Descriptions.Item>
+                <Descriptions.Item label="วันที่อัปเดต" span={1}>
+                  {selectedOrder.updatedAt 
+                    ? new Date(selectedOrder.updatedAt).toLocaleString("th-TH")
+                    : "-"}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            {/* Customer Information */}
+            <Card title="ข้อมูลลูกค้า" style={{ marginBottom: 16 }}>
+              <Descriptions column={2} bordered size="small">
+                <Descriptions.Item label="ชื่อ" span={1}>
+                  {selectedOrder.customer.name}
+                </Descriptions.Item>
+                <Descriptions.Item label="อีเมล" span={1}>
+                  {selectedOrder.customer.email}
+                </Descriptions.Item>
+                <Descriptions.Item label="เบอร์โทร" span={1}>
+                  {selectedOrder.customer.phone || "-"}
+                </Descriptions.Item>
+                <Descriptions.Item label="ที่อยู่" span={1}>
+                  {selectedOrder.customer.address || "-"}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            {/* Order Items */}
+            <Card title="รายการสินค้า">
+              <Table
+                dataSource={selectedOrder.orderItems}
+                rowKey="id"
+                pagination={false}
+                size="small"
+                columns={[
+                  {
+                    title: "สินค้า",
+                    dataIndex: ["product", "name"],
+                    key: "productName",
+                  },
+                  {
+                    title: "จำนวน",
+                    dataIndex: "quantity",
+                    key: "quantity",
+                    width: 80,
+                  },
+                  {
+                    title: "ราคา/หน่วย",
+                    dataIndex: "price",
+                    key: "price",
+                    width: 120,
+                    render: (price) => `฿${Number(price).toLocaleString()}`,
+                  },
+                  {
+                    title: "รวม",
+                    key: "total",
+                    width: 120,
+                    render: (_, record) => 
+                      `฿${(Number(record.price) * record.quantity).toLocaleString()}`,
+                  },
+                ]}
+              />
+            </Card>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+}

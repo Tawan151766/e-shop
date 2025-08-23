@@ -8,6 +8,7 @@ import { useCallback } from "react";
 import Pagination from "@/module/shop/Pagination";
 import HeroBanner from "@/module/shop/HeroBanner";
 import LoadingSpinner from "@/module/shop/LoadingSpinner";
+import ShopFooter from "@/module/shop/ShopFooter";
 
 export default function MainModule() {
   const [categories, setCategories] = useState([]);
@@ -79,6 +80,7 @@ export default function MainModule() {
           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       )}
+      <ShopFooter />
     </>
   );
 }
