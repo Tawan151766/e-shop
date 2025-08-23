@@ -18,7 +18,7 @@ export default function ProductDetail({ product }) {
         <div className="text-center">
           <div className="text-red-600 text-xl mb-2">⚠️</div>
           <div className="text-red-600 font-medium">ไม่พบสินค้า</div>
-          <button 
+          <button
             onClick={() => router.back()}
             className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
           >
@@ -29,10 +29,11 @@ export default function ProductDetail({ product }) {
     );
   }
 
-  const mainImageUrl = selectedImage || 
-                      product.galleries?.[0]?.imageUrl || 
-                      product.imageUrl || 
-                      "/public/no-image.png";
+  const mainImageUrl =
+    selectedImage ||
+    product.galleries?.[0]?.imageUrl ||
+    product.imageUrl ||
+    "/public/no-image.png";
 
   const handleShare = async () => {
     const shareData = {
@@ -42,7 +43,11 @@ export default function ProductDetail({ product }) {
     };
 
     try {
-      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      if (
+        navigator.share &&
+        navigator.canShare &&
+        navigator.canShare(shareData)
+      ) {
         await navigator.share(shareData);
       } else {
         // Fallback: Copy to clipboard
@@ -65,8 +70,8 @@ export default function ProductDetail({ product }) {
   // Calculate discounted price if promotion exists
   const getDiscountedPrice = () => {
     if (!product.promotions?.length) return null;
-    
-    const activePromo = product.promotions.find(promo => {
+
+    const activePromo = product.promotions.find((promo) => {
       const now = new Date();
       const startDate = new Date(promo.startDate);
       const endDate = new Date(promo.endDate);
@@ -78,11 +83,11 @@ export default function ProductDetail({ product }) {
     const discount = Number(activePromo.discountPercent);
     const originalPrice = Number(product.price);
     const discountedPrice = originalPrice * (1 - discount / 100);
-    
+
     return {
       original: originalPrice,
       discounted: discountedPrice,
-      percent: discount
+      percent: discount,
     };
   };
 
@@ -94,64 +99,26 @@ export default function ProductDetail({ product }) {
       style={{ fontFamily: "Work Sans, Noto Sans, sans-serif" }}
     >
       <div>
-        <ProductHeader
-          onBack={() => router.back()}
-          onShare={handleShare}
-        />
-        
+        <ProductHeader onBack={() => router.back()} onShare={handleShare} />
+
         {/* Main Product Image */}
         <div className="flex w-full grow bg-white @container p-4">
           <div className="w-full gap-1 overflow-hidden bg-white @[480px]:gap-2 aspect-[2/3] rounded-lg flex">
-            <ProductImage
-              src={mainImageUrl}
-              alt={product.name}
-            />
+            <ProductImage src={mainImageUrl} alt={product.name} />
           </div>
-        </div>
-        
-        {/* Product Title and Price */}
-        <div className="px-4">
-          <h1 className="text-[#181411] text-[22px] font-bold leading-tight tracking-[-0.015em] text-left pb-2 pt-5">
-            {product.name}
-          </h1>
-          
-          {/* Price Display */}
-          <div className="flex items-center gap-3 mb-3">
-            {priceInfo ? (
-              <>
-                <span className="text-[#eb9947] text-xl font-bold">
-                  {priceInfo.discounted.toLocaleString()} ฿
-                </span>
-                <span className="text-gray-500 text-lg line-through">
-                  {priceInfo.original.toLocaleString()} ฿
-                </span>
-                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded">
-                  -{priceInfo.percent}%
-                </span>
-              </>
-            ) : (
-              <span className="text-[#181411] text-xl font-bold">
-                {Number(product.price).toLocaleString()} ฿
-              </span>
-            )}
-          </div>
-          
-          <p className="text-[#181411] text-base font-normal leading-normal pb-3">
-            {product.description}
-          </p>
         </div>
 
-        <ProductGallery 
-          galleries={product.galleries} 
+        <ProductGallery
+          galleries={product.galleries}
           onImageSelect={setSelectedImage}
         />
         <ProductDetailsBox product={product} />
       </div>
 
       {/* Bottom Action Area */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-200 shadow-lg">
+      <div className="sticky bottom-0 bg-white">
         <div className="px-4 py-3">
-          <AddToCartButton 
+          <AddToCartButton
             product={product}
             onClick={() => {
               // Optional: Refresh cart count or show success message

@@ -51,47 +51,24 @@ export default function AddToCartButton({ product, onClick }) {
   const isOutOfStock = product.stock === 0;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col w-full gap-4 bg-white ">
       {/* Quantity Selector */}
-      <div className="flex items-center justify-between">
-        <span className="text-[#181411] font-medium">จำนวน:</span>
-        <div className="flex items-center border border-gray-300 rounded-lg">
-          <button
-            className="px-3 py-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-            onClick={() => setQuantity(Math.max(1, quantity - 1))}
-            disabled={quantity <= 1}
-          >
-            -
-          </button>
-          <span className="px-4 py-2 min-w-[50px] text-center border-x border-gray-300">
-            {quantity}
-          </span>
-          <button
-            className="px-3 py-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-            onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-            disabled={quantity >= product.stock}
-          >
-            +
-          </button>
-        </div>
-      </div>
-
-      {/* Stock Info */}
-      <div className="text-sm text-gray-600">
-        {isOutOfStock ? (
-          <span className="text-red-600 font-medium">สินค้าหมด</span>
-        ) : (
-          <span>เหลือ {product.stock} ชิ้น</span>
-        )}
-      </div>
+      <label className="flex flex-col min-w-40 flex-1">
+        <p className="text-[#181411] text-base font-semibold pb-2">Quantity</p>
+        <input
+          type="number"
+          min="1"
+          placeholder="1"
+          className="form-input w-full rounded-lg border border-[#e5e0dc] bg-white h-14 px-4 text-base text-[#181411] placeholder:text-[#b0a89f] focus:border-[#eb9947] focus:ring-2 focus:ring-[#eb9947]/30 transition-all duration-200"
+          value={quantity}
+          onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+          disabled={isLoading}
+        />
+      </label>
 
       {/* Add to Cart Button */}
       <button
-        className={`flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 flex-1 text-base font-bold leading-normal tracking-[0.015em] transition-colors ${
-          isOutOfStock || isLoading
-            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-            : "bg-[#eb9947] text-[#181411] hover:bg-[#d88a3f]"
-        }`}
+        className="flex min-w-[120px] h-14 items-center justify-center rounded-lg bg-[#eb9947] text-white text-base font-bold px-6 shadow hover:bg-[#d97d23] transition-all duration-200"
         onClick={handleAddToCart}
         disabled={isOutOfStock || isLoading}
       >
@@ -104,23 +81,12 @@ export default function AddToCartButton({ product, onClick }) {
           ) : isOutOfStock ? (
             "สินค้าหมด"
           ) : (
-            `เพิ่มลงตะกร้า (${(Number(product.price) * quantity).toLocaleString()} ฿)`
+            `เพิ่มลงตะกร้า (${(
+              Number(product.price) * quantity
+            ).toLocaleString()} ฿)`
           )}
         </span>
       </button>
-
-      {/* Buy Now Button */}
-      {!isOutOfStock && (
-        <button
-          className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 flex-1 bg-[#181411] text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-[#2a2520] transition-colors"
-          onClick={() => {
-            // TODO: Implement buy now
-            alert("ฟีเจอร์ซื้อเลย กำลังพัฒนา");
-          }}
-        >
-          <span className="truncate">ซื้อเลย</span>
-        </button>
-      )}
     </div>
   );
 }
