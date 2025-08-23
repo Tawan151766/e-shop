@@ -98,26 +98,28 @@ export default function ProductDetail({ product }) {
       className="relative flex min-h-screen flex-col bg-white justify-between group/design-root overflow-x-hidden"
       style={{ fontFamily: "Work Sans, Noto Sans, sans-serif" }}
     >
-      <div>
-        <ProductHeader onBack={() => router.back()} onShare={handleShare} />
+      <div className="flex flex-col items-center w-full">
+        <div className="w-full max-w-2xl">
+          <ProductHeader onBack={() => router.back()} onShare={handleShare} />
 
-        {/* Main Product Image */}
-        <div className="flex w-full grow bg-white @container p-4">
-          <div className="w-full gap-1 overflow-hidden bg-white @[480px]:gap-2 aspect-[2/3] rounded-lg flex">
-            <ProductImage src={mainImageUrl} alt={product.name} />
+          {/* Main Product Image */}
+          <div className="flex w-full grow bg-white p-4 justify-center">
+            <div className="w-full max-w-2xl gap-1 overflow-hidden bg-white sm:gap-2 aspect-[2/3] rounded-lg flex">
+              <ProductImage src={mainImageUrl} alt={product.name} />
+            </div>
           </div>
-        </div>
 
-        <ProductGallery
-          galleries={product.galleries}
-          onImageSelect={setSelectedImage}
-        />
-        <ProductDetailsBox product={product} />
+          <ProductGallery
+            galleries={product.galleries}
+            onImageSelect={setSelectedImage}
+          />
+          <ProductDetailsBox product={product} />
+        </div>
       </div>
 
       {/* Bottom Action Area */}
-      <div className="sticky bottom-0 bg-white">
-        <div className="px-4 py-3">
+      <div className="sticky bottom-0 bg-white w-full flex justify-center">
+        <div className="px-4 py-3 w-full max-w-2xl">
           <AddToCartButton
             product={product}
             onClick={() => {
