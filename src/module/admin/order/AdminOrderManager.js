@@ -20,6 +20,8 @@ import {
   Row,
   Col,
   Tooltip,
+  Form,
+  Input,
 } from "antd";
 import {
   EyeOutlined,
@@ -32,6 +34,8 @@ import {
   DollarOutlined,
   ExclamationCircleOutlined,
   FileImageOutlined,
+  CarOutlined,
+  SendOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import OrderStatistics from "./OrderStatistics";
@@ -48,6 +52,10 @@ export default function AdminOrderManager() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentVerifying, setPaymentVerifying] = useState(false);
   const [orderPayment, setOrderPayment] = useState(null);
+  const [shippingModalOpen, setShippingModalOpen] = useState(false);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [orderShipping, setOrderShipping] = useState(null);
+  const [shippingForm] = Form.useForm();
 
   // Order Status Configuration
   const ORDER_STATUS = {
@@ -58,6 +66,25 @@ export default function AdminOrderManager() {
     COMPLETED: { label: "เสร็จสิ้น", color: "success", step: 4 },
     CANCELLED: { label: "ยกเลิก", color: "red", step: -1 },
   };
+
+  // Shipping Status Configuration
+  const SHIPPING_STATUS = {
+    PREPARING: { label: "เตรียมสินค้า", color: "orange" },
+    SHIPPED: { label: "จัดส่งแล้ว", color: "blue" },
+    DELIVERED: { label: "จัดส่งสำเร็จ", color: "green" },
+  };
+
+  // Courier Options
+  const COURIERS = [
+    "Thailand Post",
+    "Kerry Express",
+    "J&T Express",
+    "Flash Express",
+    "Ninja Van",
+    "DHL",
+    "FedEx",
+    "UPS",
+  ];
 
   const fetchOrders = async (status = "ALL") => {
     setLoading(true);
@@ -186,6 +213,19 @@ export default function AdminOrderManager() {
               </Button>
             </Tooltip>
           )}
+          {(record.status === "PAID" || record.status === "SHIPPING") && (
+            <Tooltip title="จัดการการจัดส่ง">
+              <Button
+                type="default"
+                icon={<TruckOutlined />}
+                size="small"
+                loading={shippingLoading}
+                onClick={() => handleCreateShipping(record.id)}
+              >
+                จัดส่ง
+              </Button>
+            </Tooltip>
+          )}
         </Space>
       ),
     },
@@ -269,6 +309,63 @@ export default function AdminOrderManager() {
       return { status: "rejected", text: "ปฏิเสธ", color: "red" };
     }
     return { status: "unknown", text: "ไม่ทราบสถานะ", color: "default" };
+  };
+
+  const handleCreateShipping = async (orderId) => {
+    setShippingLoading(true);
+    try {
+      // Fetch shipping data for this order
+      const shippingRes = await axios.get(
+        `/api/admin/shipping?orderId=${orderId}`
+      );
+      setOrderShipping(shippingRes.data.shippings?.[0] || null);
+
+      // Reset form
+      shippingForm.resetFields();
+      if (shippingRes.data.shippings?.[0]) {
+        shippingForm.setFieldsValue({
+          courier: shippingRes.data.shippings[0].courier,
+          trackingNumber: shippingRes.data.shippings[0].trackingNumber,
+          status: shippingRes.data.shippings[0].status,
+        });
+      }
+
+      setSelectedOrder(orders.find((o) => o.id === orderId));
+      setShippingModalOpen(true);
+    } catch (error) {
+      console.error("Error fetching shipping:", error);
+      setOrderShipping(null);
+      setSelectedOrder(orders.find((o) => o.id === orderId));
+      setShippingModalOpen(true);
+    } finally {
+      setShippingLoading(false);
+    }
+  };
+
+  const handleSaveShipping = async (values) => {
+    setShippingLoading(true);
+    try {
+      if (orderShipping) {
+        // Update existing shipping
+        await axios.put(`/api/admin/shipping/${orderShipping.id}`, values);
+        message.success("อัปเดตข้อมูลการจัดส่งสำเร็จ");
+      } else {
+        // Create new shipping
+        await axios.post("/api/admin/shipping", {
+          ...values,
+          orderId: selectedOrder.id,
+        });
+        message.success("สร้างข้อมูลการจัดส่งสำเร็จ");
+      }
+
+      setShippingModalOpen(false);
+      fetchOrders(activeTab);
+    } catch (error) {
+      console.error("Shipping save error:", error);
+      message.error("บันทึกข้อมูลการจัดส่งไม่สำเร็จ");
+    } finally {
+      setShippingLoading(false);
+    }
   };
 
   return (
@@ -802,6 +899,163 @@ export default function AdminOrderManager() {
                   style={{ marginTop: 16 }}
                 />
               )}
+            </Card>
+          </div>
+        )}
+      </Modal>
+
+      {/* Shipping Management Modal */}
+      <Modal
+        title={
+          <Space>
+            <TruckOutlined />
+            จัดการการจัดส่ง - คำสั่งซื้อ #{selectedOrder?.id}
+          </Space>
+        }
+        open={shippingModalOpen}
+        onCancel={() => setShippingModalOpen(false)}
+        width={600}
+        footer={null}
+      >
+        {selectedOrder && (
+          <div>
+            {/* Order Summary */}
+            <Card title="ข้อมูลคำสั่งซื้อ" style={{ marginBottom: 16 }}>
+              <Descriptions column={2} size="small">
+                <Descriptions.Item label="หมายเลขคำสั่งซื้อ">
+                  #{selectedOrder.id}
+                </Descriptions.Item>
+                <Descriptions.Item label="ลูกค้า">
+                  {selectedOrder.customer.name}
+                </Descriptions.Item>
+                <Descriptions.Item label="อีเมล">
+                  {selectedOrder.customer.email}
+                </Descriptions.Item>
+                <Descriptions.Item label="ยอดรวม">
+                  ฿{Number(selectedOrder.totalAmount).toLocaleString()}
+                </Descriptions.Item>
+                <Descriptions.Item label="ที่อยู่จัดส่ง" span={2}>
+                  {selectedOrder.customer.address || "ไม่ได้ระบุ"}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            {/* Shipping Form */}
+            <Card
+              title={
+                orderShipping ? "แก้ไขข้อมูลการจัดส่ง" : "สร้างข้อมูลการจัดส่ง"
+              }
+            >
+              <Form
+                form={shippingForm}
+                layout="vertical"
+                onFinish={handleSaveShipping}
+              >
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      label="บริษัทขนส่ง"
+                      name="courier"
+                      rules={[
+                        { required: true, message: "กรุณาเลือกบริษัทขนส่ง" },
+                      ]}
+                    >
+                      <Select placeholder="เลือกบริษัทขนส่ง">
+                        {COURIERS.map((courier) => (
+                          <Select.Option key={courier} value={courier}>
+                            {courier}
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item label="หมายเลขติดตาม" name="trackingNumber">
+                      <Input placeholder="ใส่หมายเลขติดตาม" />
+                    </Form.Item>
+                  </Col>
+                </Row>
+
+                <Form.Item
+                  label="สถานะการจัดส่ง"
+                  name="status"
+                  initialValue="PREPARING"
+                  rules={[{ required: true, message: "กรุณาเลือกสถานะ" }]}
+                >
+                  <Select>
+                    <Select.Option value="PREPARING">
+                      <Space>
+                        <ClockCircleOutlined />
+                        เตรียมสินค้า
+                      </Space>
+                    </Select.Option>
+                    <Select.Option value="SHIPPED">
+                      <Space>
+                        <SendOutlined />
+                        จัดส่งแล้ว
+                      </Space>
+                    </Select.Option>
+                    <Select.Option value="DELIVERED">
+                      <Space>
+                        <CheckCircleOutlined />
+                        จัดส่งสำเร็จ
+                      </Space>
+                    </Select.Option>
+                  </Select>
+                </Form.Item>
+
+                {/* Current Shipping Info */}
+                {orderShipping && (
+                  <Alert
+                    message="ข้อมูลการจัดส่งปัจจุบัน"
+                    description={
+                      <div>
+                        <p>
+                          <strong>บริษัทขนส่ง:</strong>{" "}
+                          {orderShipping.courier || "-"}
+                        </p>
+                        <p>
+                          <strong>หมายเลขติดตาม:</strong>{" "}
+                          {orderShipping.trackingNumber || "-"}
+                        </p>
+                        <p>
+                          <strong>สถานะ:</strong>
+                          <Tag
+                            color={SHIPPING_STATUS[orderShipping.status]?.color}
+                            style={{ marginLeft: 8 }}
+                          >
+                            {SHIPPING_STATUS[orderShipping.status]?.label}
+                          </Tag>
+                        </p>
+                        <p>
+                          <strong>สร้างเมื่อ:</strong>{" "}
+                          {new Date(orderShipping.createdAt).toLocaleString(
+                            "th-TH"
+                          )}
+                        </p>
+                      </div>
+                    }
+                    type="info"
+                    style={{ marginBottom: 16 }}
+                  />
+                )}
+
+                <div style={{ textAlign: "right" }}>
+                  <Space>
+                    <Button onClick={() => setShippingModalOpen(false)}>
+                      ยกเลิก
+                    </Button>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      loading={shippingLoading}
+                      icon={<TruckOutlined />}
+                    >
+                      {orderShipping ? "อัปเดต" : "สร้าง"}การจัดส่ง
+                    </Button>
+                  </Space>
+                </div>
+              </Form>
             </Card>
           </div>
         )}

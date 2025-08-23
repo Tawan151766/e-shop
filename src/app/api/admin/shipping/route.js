@@ -6,16 +6,20 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
+    const orderId = searchParams.get("orderId");
     const page = parseInt(searchParams.get("page")) || 1;
     const pageSize = parseInt(searchParams.get("pageSize")) || 20;
     const search = searchParams.get("search");
 
-    console.log("Fetching shipping records with params:", { status, page, pageSize, search });
+    console.log("Fetching shipping records with params:", { status, orderId, page, pageSize, search });
 
     // Build where clause
     const where = {};
     if (status && status !== "ALL") {
       where.status = status;
+    }
+    if (orderId) {
+      where.orderId = parseInt(orderId);
     }
     if (search) {
       where.OR = [
