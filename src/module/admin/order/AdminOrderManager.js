@@ -22,6 +22,12 @@ import {
   Tooltip,
   Form,
   Input,
+  Badge,
+  Spin,
+  Empty,
+  Typography,
+  Popconfirm,
+  notification,
 } from "antd";
 import {
   EyeOutlined,
@@ -36,11 +42,20 @@ import {
   FileImageOutlined,
   CarOutlined,
   SendOutlined,
+  WarningOutlined,
+  InfoCircleOutlined,
+  UserOutlined,
+  PhoneOutlined,
+  MailOutlined,
+  HomeOutlined,
+  CalendarOutlined,
+  ShoppingOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import OrderStatistics from "./OrderStatistics";
 
 const { Option } = Select;
+const { Title, Text } = Typography;
 
 export default function AdminOrderManager() {
   const [orders, setOrders] = useState([]);
@@ -56,6 +71,7 @@ export default function AdminOrderManager() {
   const [shippingLoading, setShippingLoading] = useState(false);
   const [orderShipping, setOrderShipping] = useState(null);
   const [shippingForm] = Form.useForm();
+  const [refreshing, setRefreshing] = useState(false);
 
   // Order Status Configuration
   const ORDER_STATUS = {
@@ -86,18 +102,28 @@ export default function AdminOrderManager() {
     "UPS",
   ];
 
-  const fetchOrders = async (status = "ALL") => {
-    setLoading(true);
+  const fetchOrders = async (status = "ALL", showRefreshMessage = false) => {
+    if (showRefreshMessage) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    
     try {
       const params = status === "ALL" ? {} : { status };
       const res = await axios.get("/api/admin/orders", { params });
       setOrders(res.data.orders || []);
+      
+      if (showRefreshMessage) {
+        message.success("รีเฟรชข้อมูลสำเร็จ");
+      }
     } catch (error) {
       console.error("Error fetching orders:", error);
-      message.error("โหลดข้อมูลไม่สำเร็จ");
+      message.error("โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
       setOrders([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -117,11 +143,21 @@ export default function AdminOrderManager() {
         status: newStatus,
       });
 
-      message.success("อัปเดตสถานะสำเร็จ");
+      notification.success({
+        message: "อัปเดตสถานะสำเร็จ",
+        description: `เปลี่ยนสถานะคำสั่งซื้อ #${orderId} เป็น ${getStatusConfig(newStatus).label}`,
+        placement: "topRight",
+      });
+      
       setModalOpen(false);
       fetchOrders(activeTab);
     } catch (error) {
-      message.error("อัปเดตสถานะไม่สำเร็จ");
+      console.error("Status update error:", error);
+      notification.error({
+        message: "อัปเดตสถานะไม่สำเร็จ",
+        description: "กรุณาตรวจสอบการเชื่อมต่อและลองใหม่อีกครั้ง",
+        placement: "topRight",
+      });
     } finally {
       setUpdateLoading(false);
     }
@@ -135,51 +171,94 @@ export default function AdminOrderManager() {
       title: "หมายเลขคำสั่งซื้อ",
       dataIndex: "id",
       key: "id",
-      width: 120,
-      render: (id) => `#${id}`,
+      width: 140,
+      render: (id) => (
+        <Text strong style={{ color: "#1890ff" }}>
+          #{id}
+        </Text>
+      ),
     },
     {
-      title: "ลูกค้า",
-      dataIndex: ["customer", "name"],
-      key: "customerName",
-      width: 150,
-    },
-    {
-      title: "อีเมล",
-      dataIndex: ["customer", "email"],
-      key: "customerEmail",
-      width: 200,
+      title: "ข้อมูลลูกค้า",
+      key: "customer",
+      width: 250,
+      render: (_, record) => (
+        <div>
+          <div style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
+            <UserOutlined style={{ marginRight: 6, color: "#666" }} />
+            <Text strong>{record.customer.name}</Text>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", marginBottom: 2 }}>
+            <MailOutlined style={{ marginRight: 6, color: "#666", fontSize: 12 }} />
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.customer.email}
+            </Text>
+          </div>
+          {record.customer.phone && (
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <PhoneOutlined style={{ marginRight: 6, color: "#666", fontSize: 12 }} />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {record.customer.phone}
+              </Text>
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       title: "ยอดรวม",
       dataIndex: "totalAmount",
       key: "totalAmount",
       width: 120,
-      render: (amount) => `฿${Number(amount).toLocaleString()}`,
+      render: (amount) => (
+        <Text strong style={{ color: "#52c41a", fontSize: 16 }}>
+          ฿{Number(amount).toLocaleString()}
+        </Text>
+      ),
     },
     {
       title: "สถานะ",
       dataIndex: "status",
       key: "status",
-      width: 130,
+      width: 140,
       render: (status) => {
         const config = getStatusConfig(status);
-        return <Tag color={config.color}>{config.label}</Tag>;
+        const needsAttention = status === "WAITING_CONFIRM";
+        return (
+          <Badge dot={needsAttention} color="red">
+            <Tag color={config.color} style={{ fontWeight: 500 }}>
+              {config.label}
+            </Tag>
+          </Badge>
+        );
       },
     },
     {
       title: "วันที่สั่งซื้อ",
       dataIndex: "createdAt",
       key: "createdAt",
-      width: 150,
-      render: (date) => new Date(date).toLocaleDateString("th-TH"),
+      width: 160,
+      render: (date) => (
+        <div>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <CalendarOutlined style={{ marginRight: 6, color: "#666" }} />
+            <Text>{new Date(date).toLocaleDateString("th-TH")}</Text>
+          </div>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {new Date(date).toLocaleTimeString("th-TH", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Text>
+        </div>
+      ),
     },
     {
       title: "การดำเนินการ",
       key: "actions",
-      width: 200,
+      width: 280,
       render: (_, record) => (
-        <Space>
+        <Space wrap>
           <Button
             type="primary"
             icon={<EyeOutlined />}
@@ -189,14 +268,23 @@ export default function AdminOrderManager() {
             ดูรายละเอียด
           </Button>
           {record.status === "WAITING_CONFIRM" && (
-            <Tooltip title="ตรวจสอบการชำระเงิน">
+            <Tooltip title="ตรวจสอบการชำระเงิน - ต้องดำเนินการ">
               <Button
                 type="default"
                 icon={<CreditCardOutlined />}
                 size="small"
+                style={{ 
+                  borderColor: "#faad14", 
+                  color: "#faad14",
+                  animation: "pulse 2s infinite"
+                }}
                 onClick={async () => {
                   setSelectedOrder(record);
-                  // Fetch payment data for this order
+                  setPaymentModalOpen(true);
+                  
+                  // Show loading in modal while fetching payment data
+                  setOrderPayment(null);
+                  
                   try {
                     const paymentRes = await axios.get(
                       `/api/admin/payments?orderId=${record.id}`
@@ -205,8 +293,8 @@ export default function AdminOrderManager() {
                   } catch (error) {
                     console.error("Error fetching payment:", error);
                     setOrderPayment(null);
+                    message.error("ไม่สามารถโหลดข้อมูลการชำระเงินได้");
                   }
-                  setPaymentModalOpen(true);
                 }}
               >
                 ตรวจสอบ
@@ -231,14 +319,72 @@ export default function AdminOrderManager() {
     },
   ];
 
+  const getTabCount = (status) => {
+    if (status === "ALL") return orders.length;
+    return orders.filter(order => order.status === status).length;
+  };
+
   const tabItems = [
-    { key: "ALL", label: "ทั้งหมด" },
-    { key: "PENDING_PAYMENT", label: "รอชำระเงิน" },
-    { key: "WAITING_CONFIRM", label: "รอยืนยัน" },
-    { key: "PAID", label: "ชำระแล้ว" },
-    { key: "SHIPPING", label: "กำลังจัดส่ง" },
-    { key: "COMPLETED", label: "เสร็จสิ้น" },
-    { key: "CANCELLED", label: "ยกเลิก" },
+    { 
+      key: "ALL", 
+      label: (
+        <Badge count={orders.length} showZero>
+          <span>ทั้งหมด</span>
+        </Badge>
+      )
+    },
+    { 
+      key: "PENDING_PAYMENT", 
+      label: (
+        <Badge count={orders.filter(o => o.status === "PENDING_PAYMENT").length} showZero>
+          <span>รอชำระเงิน</span>
+        </Badge>
+      )
+    },
+    { 
+      key: "WAITING_CONFIRM", 
+      label: (
+        <Badge 
+          count={orders.filter(o => o.status === "WAITING_CONFIRM").length} 
+          showZero
+          style={{ backgroundColor: '#faad14' }}
+        >
+          <span>รอยืนยัน</span>
+        </Badge>
+      )
+    },
+    { 
+      key: "PAID", 
+      label: (
+        <Badge count={orders.filter(o => o.status === "PAID").length} showZero>
+          <span>ชำระแล้ว</span>
+        </Badge>
+      )
+    },
+    { 
+      key: "SHIPPING", 
+      label: (
+        <Badge count={orders.filter(o => o.status === "SHIPPING").length} showZero>
+          <span>กำลังจัดส่ง</span>
+        </Badge>
+      )
+    },
+    { 
+      key: "COMPLETED", 
+      label: (
+        <Badge count={orders.filter(o => o.status === "COMPLETED").length} showZero>
+          <span>เสร็จสิ้น</span>
+        </Badge>
+      )
+    },
+    { 
+      key: "CANCELLED", 
+      label: (
+        <Badge count={orders.filter(o => o.status === "CANCELLED").length} showZero>
+          <span>ยกเลิก</span>
+        </Badge>
+      )
+    },
   ];
 
   const getOrderProgress = (status) => {
@@ -269,7 +415,11 @@ export default function AdminOrderManager() {
       const payment = paymentRes.data.payments?.[0];
 
       if (!payment) {
-        message.error("ไม่พบข้อมูลการชำระเงิน");
+        notification.error({
+          message: "ไม่พบข้อมูลการชำระเงิน",
+          description: "กรุณาตรวจสอบว่าลูกค้าได้อัปโหลดหลักฐานการชำระเงินแล้ว",
+          placement: "topRight",
+        });
         return;
       }
 
@@ -279,15 +429,25 @@ export default function AdminOrderManager() {
         action,
       });
 
-      message.success(
-        verified ? "ยืนยันการชำระเงินสำเร็จ" : "ปฏิเสธการชำระเงินสำเร็จ"
-      );
+      notification.success({
+        message: verified ? "ยืนยันการชำระเงินสำเร็จ" : "ปฏิเสธการชำระเงินสำเร็จ",
+        description: verified 
+          ? `คำสั่งซื้อ #${orderId} ได้รับการยืนยันการชำระเงินแล้ว สถานะเปลี่ยนเป็น "ชำระแล้ว"`
+          : `คำสั่งซื้อ #${orderId} ถูกปฏิเสธการชำระเงิน สถานะเปลี่ยนเป็น "ยกเลิก"`,
+        placement: "topRight",
+        duration: 5,
+      });
+      
       setPaymentModalOpen(false);
       setModalOpen(false);
       fetchOrders(activeTab);
     } catch (error) {
       console.error("Payment verification error:", error);
-      message.error("ไม่สามารถดำเนินการได้");
+      notification.error({
+        message: "ไม่สามารถดำเนินการได้",
+        description: error.response?.data?.error || "เกิดข้อผิดพลาดในการประมวลผล กรุณาลองใหม่อีกครั้ง",
+        placement: "topRight",
+      });
     } finally {
       setPaymentVerifying(false);
     }
@@ -369,42 +529,90 @@ export default function AdminOrderManager() {
   };
 
   return (
-    <div style={{ padding: 24 }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 16,
-        }}
+    <div style={{ padding: 24, backgroundColor: "#f5f5f5", minHeight: "100vh" }}>
+      <Card 
+        style={{ marginBottom: 24 }}
+        bodyStyle={{ padding: "16px 24px" }}
       >
-        <h2>จัดการคำสั่งซื้อ</h2>
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={() => fetchOrders(activeTab)}
-          loading={loading}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
         >
-          รีเฟรช
-        </Button>
-      </div>
+          <div>
+            <Title level={2} style={{ margin: 0, color: "#1890ff" }}>
+              <ShoppingOutlined style={{ marginRight: 12 }} />
+              จัดการคำสั่งซื้อ
+            </Title>
+            <Text type="secondary">
+              ระบบจัดการคำสั่งซื้อ การตรวจสอบการชำระเงิน และการจัดส่ง
+            </Text>
+          </div>
+          <Space>
+            <Button
+              icon={<ReloadOutlined spin={refreshing} />}
+              onClick={() => fetchOrders(activeTab, true)}
+              loading={refreshing}
+              type="default"
+            >
+              รีเฟรช
+            </Button>
+          </Space>
+        </div>
+      </Card>
 
       <OrderStatistics />
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={tabItems}
-        style={{ marginBottom: 16 }}
-      />
+      <Card style={{ marginBottom: 24 }}>
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={tabItems}
+          size="large"
+          style={{ marginBottom: 0 }}
+        />
+      </Card>
 
-      <Table
-        columns={columns}
-        dataSource={orders}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 20 }}
-        scroll={{ x: 1000 }}
-      />
+      <Card>
+        {orders.length === 0 && !loading ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <div>
+                <Text type="secondary">ไม่พบคำสั่งซื้อ</Text>
+                <br />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {activeTab === "ALL" 
+                    ? "ยังไม่มีคำสั่งซื้อในระบบ" 
+                    : `ไม่มีคำสั่งซื้อในสถานะ "${tabItems.find(t => t.key === activeTab)?.label}"`
+                  }
+                </Text>
+              </div>
+            }
+          />
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={orders}
+            rowKey="id"
+            loading={loading}
+            pagination={{ 
+              pageSize: 20,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => 
+                `${range[0]}-${range[1]} จาก ${total} รายการ`,
+            }}
+            scroll={{ x: 1200 }}
+            size="middle"
+            rowClassName={(record) => 
+              record.status === "WAITING_CONFIRM" ? "highlight-row" : ""
+            }
+          />
+        )}
+      </Card>
 
       {/* Order Detail Modal */}
       <Modal
@@ -593,21 +801,67 @@ export default function AdminOrderManager() {
             </Card>
 
             {/* Customer Information */}
-            <Card title="ข้อมูลลูกค้า" style={{ marginBottom: 16 }}>
-              <Descriptions column={2} bordered size="small">
-                <Descriptions.Item label="ชื่อ" span={1}>
-                  {selectedOrder.customer.name}
-                </Descriptions.Item>
-                <Descriptions.Item label="อีเมล" span={1}>
-                  {selectedOrder.customer.email}
-                </Descriptions.Item>
-                <Descriptions.Item label="เบอร์โทร" span={1}>
-                  {selectedOrder.customer.phone || "-"}
-                </Descriptions.Item>
-                <Descriptions.Item label="ที่อยู่" span={1}>
-                  {selectedOrder.customer.address || "-"}
-                </Descriptions.Item>
-              </Descriptions>
+            <Card 
+              title={
+                <Space>
+                  <UserOutlined />
+                  ข้อมูลลูกค้า
+                </Space>
+              } 
+              style={{ marginBottom: 16 }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Descriptions column={1} size="small">
+                    <Descriptions.Item 
+                      label={
+                        <Space>
+                          <UserOutlined />
+                          ชื่อ
+                        </Space>
+                      }
+                    >
+                      <Text strong>{selectedOrder.customer.name}</Text>
+                    </Descriptions.Item>
+                    <Descriptions.Item 
+                      label={
+                        <Space>
+                          <MailOutlined />
+                          อีเมล
+                        </Space>
+                      }
+                    >
+                      <Text copyable>{selectedOrder.customer.email}</Text>
+                    </Descriptions.Item>
+                  </Descriptions>
+                </Col>
+                <Col span={12}>
+                  <Descriptions column={1} size="small">
+                    <Descriptions.Item 
+                      label={
+                        <Space>
+                          <PhoneOutlined />
+                          เบอร์โทร
+                        </Space>
+                      }
+                    >
+                      <Text copyable={!!selectedOrder.customer.phone}>
+                        {selectedOrder.customer.phone || "-"}
+                      </Text>
+                    </Descriptions.Item>
+                    <Descriptions.Item 
+                      label={
+                        <Space>
+                          <HomeOutlined />
+                          ที่อยู่
+                        </Space>
+                      }
+                    >
+                      <Text>{selectedOrder.customer.address || "ไม่ได้ระบุ"}</Text>
+                    </Descriptions.Item>
+                  </Descriptions>
+                </Col>
+              </Row>
             </Card>
 
             {/* Order Items */}
@@ -655,40 +909,64 @@ export default function AdminOrderManager() {
       {/* Payment Verification Modal */}
       <Modal
         title={
-          <Space>
-            <CreditCardOutlined />
-            ตรวจสอบการชำระเงิน - คำสั่งซื้อ #{selectedOrder?.id}
-          </Space>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <CreditCardOutlined style={{ marginRight: 8, color: "#1890ff" }} />
+            <div>
+              <Title level={4} style={{ margin: 0 }}>
+                ตรวจสอบการชำระเงิน
+              </Title>
+              <Text type="secondary">คำสั่งซื้อ #{selectedOrder?.id}</Text>
+            </div>
+          </div>
         }
         open={paymentModalOpen}
         onCancel={() => setPaymentModalOpen(false)}
-        width={800}
+        width={900}
         footer={[
           <Button key="cancel" onClick={() => setPaymentModalOpen(false)}>
             ปิด
           </Button>,
-          <Button
+          <Popconfirm
             key="reject"
-            danger
-            loading={paymentVerifying}
-            onClick={() => handleVerifyPayment(selectedOrder?.id, false)}
+            title="ปฏิเสธการชำระเงิน"
+            description="คุณแน่ใจหรือไม่ที่จะปฏิเสธการชำระเงินนี้? การดำเนินการนี้ไม่สามารถยกเลิกได้"
+            onConfirm={() => handleVerifyPayment(selectedOrder?.id, false)}
+            okText="ยืนยันปฏิเสธ"
+            cancelText="ยกเลิก"
+            okButtonProps={{ danger: true }}
           >
-            ปฏิเสธการชำระเงิน
-          </Button>,
-          <Button
+            <Button
+              danger
+              loading={paymentVerifying}
+              icon={<ExclamationCircleOutlined />}
+            >
+              ปฏิเสธการชำระเงิน
+            </Button>
+          </Popconfirm>,
+          <Popconfirm
             key="approve"
-            type="primary"
-            loading={paymentVerifying}
-            onClick={() => handleVerifyPayment(selectedOrder?.id, true)}
+            title="ยืนยันการชำระเงิน"
+            description="คุณแน่ใจหรือไม่ที่จะยืนยันการชำระเงินนี้?"
+            onConfirm={() => handleVerifyPayment(selectedOrder?.id, true)}
+            okText="ยืนยัน"
+            cancelText="ยกเลิก"
+            okButtonProps={{ type: "primary" }}
           >
-            ยืนยันการชำระเงิน
-          </Button>,
+            <Button
+              type="primary"
+              loading={paymentVerifying}
+              icon={<CheckCircleOutlined />}
+            >
+              ยืนยันการชำระเงิน
+            </Button>
+          </Popconfirm>,
         ]}
       >
         {selectedOrder && (
-          <div>
-            {/* Payment Summary */}
-            <Card title="สรุปการชำระเงิน" style={{ marginBottom: 16 }}>
+          <Spin spinning={orderPayment === null && paymentModalOpen} tip="กำลังโหลดข้อมูลการชำระเงิน...">
+            <div>
+              {/* Payment Summary */}
+              <Card title="สรุปการชำระเงิน" style={{ marginBottom: 16 }}>
               <Row gutter={16}>
                 <Col span={12}>
                   <Descriptions column={1} size="small">
@@ -740,60 +1018,105 @@ export default function AdminOrderManager() {
             </Card>
 
             {/* Payment Evidence */}
-            <Card title="หลักฐานการชำระเงิน" style={{ marginBottom: 16 }}>
+            <Card 
+              title={
+                <Space>
+                  <FileImageOutlined />
+                  หลักฐานการชำระเงิน
+                </Space>
+              } 
+              style={{ marginBottom: 16 }}
+            >
               {!orderPayment && (
                 <Alert
                   message="ไม่พบข้อมูลการชำระเงิน"
-                  description="ลูกค้ายังไม่ได้อัปโหลดหลักฐานการชำระเงิน"
+                  description="ลูกค้ายังไม่ได้อัปโหลดหลักฐานการชำระเงิน กรุณาติดต่อลูกค้าเพื่อขอหลักฐานการชำระเงิน"
                   type="warning"
                   showIcon
+                  icon={<WarningOutlined />}
                   style={{ marginBottom: 16 }}
                 />
               )}
 
               <Row gutter={16}>
                 <Col span={12}>
-                  <Card size="small" title="สลิปการโอนเงิน">
+                  <Card 
+                    size="small" 
+                    title={
+                      <Space>
+                        <FileImageOutlined />
+                        สลิปการโอนเงิน
+                      </Space>
+                    }
+                    style={{ height: 300 }}
+                  >
                     {orderPayment?.slipUrl ? (
                       <div style={{ textAlign: "center" }}>
                         <Image
                           src={orderPayment.slipUrl}
                           alt="Payment Slip"
-                          style={{ maxWidth: "100%", maxHeight: 200 }}
+                          style={{ 
+                            maxWidth: "100%", 
+                            maxHeight: 220,
+                            borderRadius: 4,
+                            border: "1px solid #d9d9d9"
+                          }}
+                          preview={{
+                            mask: (
+                              <div style={{ color: "white" }}>
+                                <EyeOutlined style={{ marginRight: 4 }} />
+                                ดูรูปเต็ม
+                              </div>
+                            )
+                          }}
                         />
                       </div>
                     ) : (
                       <div
                         style={{
-                          height: 200,
+                          height: 220,
                           border: "2px dashed #d9d9d9",
+                          borderRadius: 4,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           flexDirection: "column",
                           color: "#999",
+                          backgroundColor: "#fafafa"
                         }}
                       >
                         <FileImageOutlined
-                          style={{ fontSize: 48, marginBottom: 8 }}
+                          style={{ fontSize: 48, marginBottom: 8, color: "#d9d9d9" }}
                         />
-                        <span>ไม่มีรูปภาพ</span>
-                        <small>(รอลูกค้าอัปโหลดสลิป)</small>
+                        <Text type="secondary">ไม่มีรูปภาพ</Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          รอลูกค้าอัปโหลดสลิป
+                        </Text>
                       </div>
                     )}
                   </Card>
                 </Col>
                 <Col span={12}>
-                  <Card size="small" title="ข้อมูลการชำระเงิน">
+                  <Card 
+                    size="small" 
+                    title={
+                      <Space>
+                        <InfoCircleOutlined />
+                        ข้อมูลการชำระเงิน
+                      </Space>
+                    }
+                    style={{ height: 300 }}
+                  >
                     <Descriptions column={1} size="small">
                       <Descriptions.Item label="หมายเลขการชำระ">
-                        {orderPayment?.id || "-"}
+                        <Text code>{orderPayment?.id || "-"}</Text>
                       </Descriptions.Item>
                       <Descriptions.Item label="จำนวนเงิน">
-                        ฿
-                        {orderPayment
-                          ? Number(orderPayment.amount).toLocaleString()
-                          : "-"}
+                        <Text strong style={{ color: "#52c41a", fontSize: 16 }}>
+                          ฿{orderPayment
+                            ? Number(orderPayment.amount).toLocaleString()
+                            : "-"}
+                        </Text>
                       </Descriptions.Item>
                       <Descriptions.Item label="สถานะ">
                         {orderPayment ? (
@@ -805,6 +1128,7 @@ export default function AdminOrderManager() {
                                 ? "green"
                                 : "red"
                             }
+                            style={{ fontWeight: 500 }}
                           >
                             {orderPayment.status === "WAITING"
                               ? "รอตรวจสอบ"
@@ -813,22 +1137,28 @@ export default function AdminOrderManager() {
                               : "ปฏิเสธ"}
                           </Tag>
                         ) : (
-                          "-"
+                          <Text type="secondary">-</Text>
                         )}
                       </Descriptions.Item>
                       <Descriptions.Item label="วันที่อัปโหลด">
-                        {orderPayment?.paymentDate
-                          ? new Date(orderPayment.paymentDate).toLocaleString(
-                              "th-TH"
-                            )
-                          : "-"}
+                        <Space>
+                          <CalendarOutlined />
+                          <Text>
+                            {orderPayment?.paymentDate
+                              ? new Date(orderPayment.paymentDate).toLocaleString("th-TH")
+                              : "-"}
+                          </Text>
+                        </Space>
                       </Descriptions.Item>
                       <Descriptions.Item label="วันที่ยืนยัน">
-                        {orderPayment?.confirmedAt
-                          ? new Date(orderPayment.confirmedAt).toLocaleString(
-                              "th-TH"
-                            )
-                          : "-"}
+                        <Space>
+                          <CalendarOutlined />
+                          <Text>
+                            {orderPayment?.confirmedAt
+                              ? new Date(orderPayment.confirmedAt).toLocaleString("th-TH")
+                              : "ยังไม่ได้ยืนยัน"}
+                          </Text>
+                        </Space>
                       </Descriptions.Item>
                     </Descriptions>
                   </Card>
@@ -837,70 +1167,69 @@ export default function AdminOrderManager() {
             </Card>
 
             {/* Verification Actions */}
-            <Card title="การดำเนินการ">
+            <Card 
+              title={
+                <Space>
+                  <CheckCircleOutlined />
+                  การดำเนินการ
+                </Space>
+              }
+            >
               <Alert
-                message="คำแนะนำในการตรวจสอบ"
+                message="คำแนะนำในการตรวจสอบการชำระเงิน"
                 description={
-                  <ul style={{ margin: 0, paddingLeft: 20 }}>
-                    <li>ตรวจสอบจำนวนเงินให้ตรงกับยอดคำสั่งซื้อ</li>
-                    <li>ตรวจสอบวันที่และเวลาการโอนเงิน</li>
-                    <li>ตรวจสอบเลขที่บัญชีปลายทาง</li>
-                    <li>ตรวจสอบชื่อผู้โอนเงินให้ตรงกับชื่อลูกค้า</li>
-                  </ul>
+                  <div>
+                    <Text strong style={{ color: "#1890ff" }}>
+                      กรุณาตรวจสอบข้อมูลต่อไปนี้ก่อนยืนยัน:
+                    </Text>
+                    <ul style={{ margin: "8px 0 0 0", paddingLeft: 20 }}>
+                      <li>
+                        <Text>จำนวนเงินให้ตรงกับยอดคำสั่งซื้อ </Text>
+                        <Text strong style={{ color: "#52c41a" }}>
+                          (฿{Number(selectedOrder?.totalAmount || 0).toLocaleString()})
+                        </Text>
+                      </li>
+                      <li>ตรวจสอบวันที่และเวลาการโอนเงิน</li>
+                      <li>ตรวจสอบเลขที่บัญชีปลายทาง</li>
+                      <li>ตรวจสอบชื่อผู้โอนเงินให้ตรงกับชื่อลูกค้า</li>
+                      <li>ตรวจสอบความชัดเจนของสลิปการโอนเงิน</li>
+                    </ul>
+                  </div>
                 }
                 type="info"
                 showIcon
+                icon={<InfoCircleOutlined />}
                 style={{ marginBottom: 16 }}
               />
 
-              <Space size="large">
-                <Button
-                  type="primary"
-                  size="large"
-                  icon={<CheckCircleOutlined />}
-                  loading={paymentVerifying}
-                  disabled={!orderPayment || orderPayment.status !== "WAITING"}
-                  onClick={() => handleVerifyPayment(selectedOrder.id, true)}
-                >
-                  ยืนยันการชำระเงิน
-                </Button>
-                <Button
-                  danger
-                  size="large"
-                  icon={<ExclamationCircleOutlined />}
-                  loading={paymentVerifying}
-                  disabled={!orderPayment || orderPayment.status !== "WAITING"}
-                  onClick={() => handleVerifyPayment(selectedOrder.id, false)}
-                >
-                  ปฏิเสธการชำระเงิน
-                </Button>
-              </Space>
-
-              {!orderPayment && (
+              {orderPayment?.slipUrl ? (
                 <Alert
-                  message="ไม่สามารถดำเนินการได้"
-                  description="ลูกค้ายังไม่ได้อัปโหลดหลักฐานการชำระเงิน"
+                  message="พร้อมสำหรับการตรวจสอบ"
+                  description="ลูกค้าได้อัปโหลดหลักฐานการชำระเงินแล้ว กรุณาตรวจสอบและดำเนินการ"
+                  type="success"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+              ) : (
+                <Alert
+                  message="รอหลักฐานการชำระเงิน"
+                  description="ลูกค้ายังไม่ได้อัปโหลดหลักฐานการชำระเงิน กรุณาติดต่อลูกค้าหรือรอการอัปโหลด"
                   type="warning"
                   showIcon
-                  style={{ marginTop: 16 }}
+                  style={{ marginBottom: 16 }}
                 />
               )}
 
-              {orderPayment && orderPayment.status !== "WAITING" && (
-                <Alert
-                  message="ดำเนินการแล้ว"
-                  description={`การชำระเงินนี้ได้รับการ${
-                    orderPayment.status === "CONFIRMED" ? "ยืนยัน" : "ปฏิเสธ"
-                  }แล้ว`}
-                  type={
-                    orderPayment.status === "CONFIRMED" ? "success" : "error"
-                  }
-                  showIcon
-                  style={{ marginTop: 16 }}
-                />
-              )}
+              <div style={{ textAlign: "center", marginTop: 24 }}>
+                <Space size="large">
+                  <Text type="secondary">
+                    การดำเนินการนี้จะส่งผลต่อสถานะคำสั่งซื้อและไม่สามารถยกเลิกได้
+                  </Text>
+                </Space>
+              </div>
             </Card>
-          </div>
+            </div>
+          </Spin>
         )}
       </Modal>
 
@@ -1060,6 +1389,58 @@ export default function AdminOrderManager() {
           </div>
         )}
       </Modal>
+
+      <style jsx global>{`
+        .highlight-row {
+          background-color: #fff7e6 !important;
+          border-left: 4px solid #faad14;
+        }
+        
+        .highlight-row:hover {
+          background-color: #fff1b8 !important;
+        }
+        
+        @keyframes pulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(250, 173, 20, 0.7);
+          }
+          70% {
+            box-shadow: 0 0 0 10px rgba(250, 173, 20, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(250, 173, 20, 0);
+          }
+        }
+        
+        .ant-table-tbody > tr.highlight-row > td {
+          border-bottom: 1px solid #ffe58f;
+        }
+        
+        .ant-badge-count {
+          font-size: 10px;
+          min-width: 16px;
+          height: 16px;
+          line-height: 16px;
+        }
+        
+        .ant-tabs-tab {
+          padding: 8px 16px !important;
+        }
+        
+        .ant-card {
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+          border-radius: 8px;
+        }
+        
+        .ant-modal-header {
+          border-radius: 8px 8px 0 0;
+        }
+        
+        .ant-table-thead > tr > th {
+          background: #fafafa;
+          font-weight: 600;
+        }
+      `}</style>
     </div>
   );
 }
