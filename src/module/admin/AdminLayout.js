@@ -9,6 +9,7 @@ import {
   TruckOutlined,
   LogoutOutlined,
   FileImageOutlined,
+  StockOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -36,6 +37,11 @@ const adminMenu = [
     key: "/admin/product-galleries",
     icon: <FileImageOutlined />,
     label: <Link href="/admin/product-galleries">แกลเลอรีสินค้า</Link>,
+  },
+  {
+    key: "/admin/stock",
+    icon: <StockOutlined />,
+    label: <Link href="/admin/stock">จัดการสต็อก</Link>,
   },
   {
     key: "/admin/promotion",

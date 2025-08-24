@@ -8,6 +8,8 @@ import {
   UserOutlined,
   PercentageOutlined,
   DollarOutlined,
+  StockOutlined,
+  WarningOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import axios from "axios";
@@ -19,6 +21,8 @@ const statList = [
   { key: "customerCount", title: "ลูกค้า", icon: <UserOutlined /> },
   { key: "promotionCount", title: "โปรโมชั่น", icon: <PercentageOutlined /> },
   { key: "totalSales", title: "ยอดขายรวม", icon: <DollarOutlined /> },
+  { key: "totalStock", title: "สต็อกรวม", icon: <StockOutlined /> },
+  { key: "lowStockProducts", title: "สต็อกต่ำ", icon: <WarningOutlined />, color: "orange" },
 ];
 
 export default function AdminDashboard() {
@@ -49,11 +53,11 @@ export default function AdminDashboard() {
       ) : (
         <Row gutter={[24, 24]} justify="center">
           {statList.map((s) => (
-            <Col xs={24} sm={12} md={8} lg={8} xl={4} key={s.key}>
+            <Col xs={24} sm={12} md={8} lg={6} xl={3} key={s.key}>
               <Card>
                 <Statistic
                   title={
-                    <span>
+                    <span style={{ color: s.color === "orange" ? "#fa8c16" : undefined }}>
                       {s.icon} {s.title}
                     </span>
                   }
@@ -65,6 +69,7 @@ export default function AdminDashboard() {
                       : stats[s.key]
                   }
                   suffix={s.key === "totalSales" ? "฿" : undefined}
+                  valueStyle={{ color: s.color === "orange" ? "#fa8c16" : undefined }}
                 />
               </Card>
             </Col>
