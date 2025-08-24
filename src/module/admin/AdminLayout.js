@@ -209,16 +209,6 @@ export default function AdminLayout({ children }) {
               height: 64,
             }}
           />
-          <div
-            style={{
-              flex: 1,
-              textAlign: "right",
-              fontSize: 14,
-              color: "#666",
-            }}
-          >
-            ระบบจัดการผู้ดูแล
-          </div>
         </Header>
         <Content
           style={{ 
