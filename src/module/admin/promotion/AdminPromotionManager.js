@@ -12,15 +12,23 @@ import {
   message,
   Space,
   Switch,
+  Popconfirm,
+  Tag,
+  Tooltip,
 } from "antd";
 import axios from "axios";
-import { CheckCircleFilled } from "@ant-design/icons";
+import { CheckCircleFilled, CloseCircleFilled, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 
 export default function AdminPromotionManager() {
   const [promotions, setPromotions] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState({});
   const [form] = Form.useForm();
   const [search, setSearch] = useState("");
 
@@ -28,9 +36,12 @@ export default function AdminPromotionManager() {
     setLoading(true);
     try {
       const res = await axios.get("/api/admin/promotion");
-      setPromotions(res.data);
+      setPromotions(res.data || []);
     } catch (e) {
-      message.error("โหลดข้อมูลโปรโมชั่นไม่สำเร็จ");
+      const errorMessage = e.response?.data?.error || "โหลดข้อมูลโปรโมชั่นไม่สำเร็จ";
+      message.error(errorMessage);
+      console.error("Fetch promotions error:", e);
+      setPromotions([]);
     }
     setLoading(false);
   };
@@ -38,9 +49,12 @@ export default function AdminPromotionManager() {
   const fetchProducts = async () => {
     try {
       const res = await axios.get("/api/admin/product");
-      setProducts(res.data);
+      setProducts(res.data || []);
     } catch (e) {
-      message.error("โหลดข้อมูลสินค้าไม่สำเร็จ");
+      const errorMessage = e.response?.data?.error || "โหลดข้อมูลสินค้าไม่สำเร็จ";
+      message.error(errorMessage);
+      console.error("Fetch products error:", e);
+      setProducts([]);
     }
   };
 
@@ -51,22 +65,69 @@ export default function AdminPromotionManager() {
 
   const handleAdd = () => {
     form.resetFields();
+    setEditMode(false);
+    setEditingId(null);
     setModalOpen(true);
   };
 
+  const handleEdit = (record) => {
+    form.setFieldsValue({
+      productId: record.product?.id,
+      discountPercent: record.discountPercent,
+      startDate: dayjs(record.startDate),
+      endDate: dayjs(record.endDate),
+      isActive: record.isActive,
+      maxUsage: record.maxUsage,
+    });
+    setEditMode(true);
+    setEditingId(record.id);
+    setModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    setDeleteLoading(prev => ({ ...prev, [id]: true }));
+    try {
+      const response = await axios.delete(`/api/admin/promotion/${id}`);
+      message.success(response.data.message || "ลบโปรโมชั่นสำเร็จ");
+      fetchPromotions();
+    } catch (e) {
+      const errorMessage = e.response?.data?.error || "ลบโปรโมชั่นไม่สำเร็จ";
+      message.error(errorMessage);
+      console.error("Delete promotion error:", e);
+    } finally {
+      setDeleteLoading(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
   const handleOk = async () => {
+    setSaveLoading(true);
     try {
       const values = await form.validateFields();
-      await axios.post("/api/admin/promotion", {
+      const promotionData = {
         ...values,
         startDate: values.startDate.format("YYYY-MM-DD"),
         endDate: values.endDate.format("YYYY-MM-DD"),
-      });
-      message.success("เพิ่มโปรโมชั่นสำเร็จ");
+      };
+
+      let response;
+      if (editMode && editingId) {
+        response = await axios.patch(`/api/admin/promotion/${editingId}`, promotionData);
+        message.success(response.data.message || "แก้ไขโปรโมชั่นสำเร็จ");
+      } else {
+        response = await axios.post("/api/admin/promotion", promotionData);
+        message.success(response.data.message || "เพิ่มโปรโมชั่นสำเร็จ");
+      }
+
       setModalOpen(false);
+      setEditMode(false);
+      setEditingId(null);
       fetchPromotions();
     } catch (e) {
-      message.error("เพิ่มโปรโมชั่นไม่สำเร็จ");
+      const errorMessage = e.response?.data?.error || (editMode ? "แก้ไขโปรโมชั่นไม่สำเร็จ" : "เพิ่มโปรโมชั่นไม่สำเร็จ");
+      message.error(errorMessage);
+      console.error("Save promotion error:", e);
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -106,8 +167,10 @@ export default function AdminPromotionManager() {
       ),
       dataIndex: "discountPercent",
       key: "discountPercent",
+      width: 100,
+      align: "center",
       render: (v) => (
-        <span style={{ color: "#0d131c", fontSize: 14 }}>{v}</span>
+        <Tag color="green" style={{ fontSize: 14 }}>{v}%</Tag>
       ),
     },
     {
@@ -143,12 +206,40 @@ export default function AdminPromotionManager() {
     {
       title: (
         <span style={{ color: "#0d131c", fontWeight: 500, fontSize: 15 }}>
-          เปิดใช้งาน
+          สถานะ
         </span>
       ),
       dataIndex: "isActive",
       key: "isActive",
-      render: (v) => (v ? <CheckCircleFilled color="#4caf50" /> : <CloseCircleFilled color="#f44336" />),
+      width: 100,
+      align: "center",
+      render: (isActive, record) => {
+        const now = new Date();
+        const startDate = new Date(record.startDate);
+        const endDate = new Date(record.endDate);
+        
+        let status = "inactive";
+        let color = "default";
+        let text = "ปิดใช้งาน";
+        
+        if (isActive) {
+          if (now < startDate) {
+            status = "scheduled";
+            color = "blue";
+            text = "รอเริ่ม";
+          } else if (now >= startDate && now <= endDate) {
+            status = "active";
+            color = "green";
+            text = "ใช้งานอยู่";
+          } else {
+            status = "expired";
+            color = "red";
+            text = "หมดอายุ";
+          }
+        }
+        
+        return <Tag color={color}>{text}</Tag>;
+      },
     },
     {
       title: (
@@ -165,13 +256,57 @@ export default function AdminPromotionManager() {
     {
       title: (
         <span style={{ color: "#0d131c", fontWeight: 500, fontSize: 15 }}>
-          จำนวนที่ใช้ไป
+          การใช้งาน
         </span>
       ),
-      dataIndex: "usageCount",
-      key: "usageCount",
-      render: (v) => (
-        <span style={{ color: "#0d131c", fontSize: 14 }}>{v}</span>
+      key: "usage",
+      width: 120,
+      align: "center",
+      render: (_, record) => (
+        <span style={{ color: "#0d131c", fontSize: 14 }}>
+          {record.usageCount} / {record.maxUsage || "∞"}
+        </span>
+      ),
+    },
+    {
+      title: (
+        <span style={{ color: "#0d131c", fontWeight: 500, fontSize: 15 }}>
+          การดำเนินการ
+        </span>
+      ),
+      key: "action",
+      width: 150,
+      render: (_, record) => (
+        <Space>
+          <Tooltip title="แก้ไข">
+            <Button 
+              type="link" 
+              icon={<EditOutlined />}
+              style={{ color: '#476d9e', padding: 0 }}
+              onClick={() => handleEdit(record)}
+            >
+              แก้ไข
+            </Button>
+          </Tooltip>
+          <Popconfirm
+            title="ยืนยันการลบโปรโมชั่นนี้?"
+            description="การลบโปรโมชั่นจะไม่สามารถกู้คืนได้"
+            onConfirm={() => handleDelete(record.id)}
+            okText="ลบ"
+            cancelText="ยกเลิก"
+            okButtonProps={{ danger: true, loading: deleteLoading[record.id] }}
+          >
+            <Button 
+              type="link" 
+              icon={<DeleteOutlined />}
+              style={{ color: '#ff4d4f', padding: 0 }}
+              danger
+              loading={deleteLoading[record.id]}
+            >
+              ลบ
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -238,12 +373,19 @@ export default function AdminPromotionManager() {
         </div>
       </div>
       <Modal
-        title="เพิ่มโปรโมชั่น"
+        title={editMode ? "แก้ไขโปรโมชั่น" : "เพิ่มโปรโมชั่น"}
         open={modalOpen}
         onOk={handleOk}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => { 
+          setModalOpen(false); 
+          setEditMode(false); 
+          setEditingId(null);
+          setSaveLoading(false);
+        }}
         okText="บันทึก"
         cancelText="ยกเลิก"
+        confirmLoading={saveLoading}
+        destroyOnClose
       >
         <Form form={form} layout="vertical">
           <Form.Item
