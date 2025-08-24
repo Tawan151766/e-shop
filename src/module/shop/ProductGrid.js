@@ -2,6 +2,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "antd";
+import Link from "next/link";
 
 export default function ProductGrid({ products }) {
   const router = useRouter();
@@ -15,12 +16,13 @@ export default function ProductGrid({ products }) {
       {products.map((p) => {
         const discount = p.promotions[0]?.discountPercent;
         const productCard = (
-          <div
+          <Link
             className="bg-cover bg-center flex flex-col gap-3 rounded-lg justify-end p-4 aspect-square"
             style={{
               backgroundImage: p.imageUrl ? `url(${p.imageUrl})` : undefined,
               backgroundColor: "#f4f2f0",
             }}
+            href={`/product/${p.id}`}
           >
             <p className="text-white text-base font-bold leading-tight w-4/5 line-clamp-2">
               {p.name}
@@ -28,7 +30,7 @@ export default function ProductGrid({ products }) {
             <p className="text-white text-base leading-tight w-4/5 line-clamp-2">
               {Number(p.price).toLocaleString()} ฿
             </p>
-          </div>
+          </Link>
         );
         return discount ? (
           <Badge.Ribbon

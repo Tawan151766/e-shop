@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import LoadingSpinner from "@/module/shop/LoadingSpinner";
 import ProductDetail from "@/module/product/ProductDetail";
+import ProductDetailLoading from "@/module/product/ProductDetailLoading";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -19,6 +19,6 @@ export default function ProductDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <ProductDetailLoading />;
   return <ProductDetail product={product} />;
 }
