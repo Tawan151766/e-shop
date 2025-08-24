@@ -69,9 +69,9 @@ export default function MainModule() {
         <LoadingSpinner />
       ) : (
         <>
-          <HeroBanner products={promoProducts} />
+          {/* <HeroBanner products={promoProducts} /> */}
           <h2 className="text-[#181411] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
-            Featured
+            Products
           </h2>
           <ProductGrid products={products} />
           <Pagination
