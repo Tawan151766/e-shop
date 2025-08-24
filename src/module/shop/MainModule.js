@@ -60,15 +60,15 @@ export default function MainModule() {
 
   return (
     <>
-      <CategoryFilterBar
-        categories={categories}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={handleCategoryChange}
-      />
       {loading ? (
         <LoadingSpinner />
       ) : (
         <>
+          <CategoryFilterBar
+            categories={categories}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={handleCategoryChange}
+          />
           {/* <HeroBanner products={promoProducts} /> */}
           <h2 className="text-[#181411] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
             Products
