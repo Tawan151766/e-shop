@@ -158,7 +158,7 @@ export default function AdminLayout({ children }) {
         collapsedWidth={80}
         collapsed={collapsed}
         onCollapse={setCollapsed}
-        style={{ 
+        style={{
           background: "#fff",
           boxShadow: "2px 0 8px 0 rgba(29,35,41,.05)",
         }}
@@ -176,9 +176,10 @@ export default function AdminLayout({ children }) {
             alignItems: "center",
             justifyContent: "center",
             transition: "all 0.3s",
+            color: "black",
           }}
         >
-          {collapsed ? "AP" : "Admin Panel"}
+          {/* {collapsed ? "AP" : "Admin Panel"} */}
         </div>
         <Menu
           mode="inline"
@@ -211,9 +212,9 @@ export default function AdminLayout({ children }) {
           />
         </Header>
         <Content
-          style={{ 
-            margin: 0, 
-            background: "#f0f2f5", 
+          style={{
+            margin: 0,
+            background: "#f0f2f5",
             minHeight: "calc(100vh - 64px)",
             transition: "all 0.3s",
           }}

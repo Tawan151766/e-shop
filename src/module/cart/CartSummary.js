@@ -52,7 +52,7 @@ export default function CartSummary({ summary, onCheckout, onContinueShopping })
         {/* Free Shipping Notice */}
         {shippingFee > 0 && (
           <div className="text-xs text-[#887563] bg-blue-50 p-2 rounded">
-            💡 Add {(1000 - summary.totalAmount).toLocaleString()} ฿ more for free shipping!
+            Add {(1000 - summary.totalAmount).toLocaleString()} ฿ more for free shipping!
           </div>
         )}
 
@@ -69,7 +69,7 @@ export default function CartSummary({ summary, onCheckout, onContinueShopping })
         {/* Savings Summary */}
         {hasDiscount && (
           <div className="text-center text-sm text-green-600 bg-green-50 p-2 rounded">
-            🎉 You saved {summary.totalDiscount.toLocaleString()} ฿!
+            You saved {summary.totalDiscount.toLocaleString()} ฿!
           </div>
         )}
       </div>

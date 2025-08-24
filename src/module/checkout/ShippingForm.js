@@ -23,7 +23,7 @@ export default function ShippingForm({ shippingInfo, setShippingInfo, errors }) 
             type="text"
             value={shippingInfo.name}
             onChange={(e) => handleInputChange('name', e.target.value)}
-            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#eb9947] transition-colors ${
+            className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#eb9947] transition-colors ${
               errors.name ? 'border-red-500' : 'border-gray-300'
             }`}
             placeholder="กรอกชื่อผู้รับ"
@@ -42,7 +42,7 @@ export default function ShippingForm({ shippingInfo, setShippingInfo, errors }) 
             type="tel"
             value={shippingInfo.phone}
             onChange={(e) => handleInputChange('phone', e.target.value)}
-            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#eb9947] transition-colors ${
+            className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#eb9947] transition-colors ${
               errors.phone ? 'border-red-500' : 'border-gray-300'
             }`}
             placeholder="0xx-xxx-xxxx"
@@ -61,7 +61,7 @@ export default function ShippingForm({ shippingInfo, setShippingInfo, errors }) 
             value={shippingInfo.address}
             onChange={(e) => handleInputChange('address', e.target.value)}
             rows={4}
-            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#eb9947] transition-colors resize-none ${
+            className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#eb9947] transition-colors resize-none ${
               errors.address ? 'border-red-500' : 'border-gray-300'
             }`}
             placeholder="กรอกที่อยู่จัดส่งแบบละเอียด เช่น บ้านเลขที่ ซอย ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"
@@ -126,7 +126,7 @@ export default function ShippingForm({ shippingInfo, setShippingInfo, errors }) 
           </label>
           <textarea
             rows={2}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#eb9947] transition-colors resize-none"
+            className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#eb9947] transition-colors resize-none"
             placeholder="เช่น ช่วงเวลาที่สะดวกรับของ หรือคำแนะนำเพิ่มเติม"
           />
         </div>

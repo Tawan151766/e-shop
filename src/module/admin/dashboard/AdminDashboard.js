@@ -115,14 +115,14 @@ const statList = [
     link: "/admin/order",
     description: "ออเดอร์รอชำระเงิน"
   },
-  { 
-    key: "waitingPayments", 
-    title: "รอตรวจสอบ", 
-    icon: <CreditCardOutlined />, 
-    color: "#f5222d", 
-    link: "/admin/payment",
-    description: "การชำระเงินรอตรวจสอบ"
-  },
+  // { 
+  //   key: "waitingPayments", 
+  //   title: "รอตรวจสอบ", 
+  //   icon: <CreditCardOutlined />, 
+  //   color: "#f5222d", 
+  //   link: "/admin/payment",
+  //   description: "การชำระเงินรอตรวจสอบ"
+  // },
   { 
     key: "customerCount", 
     title: "ลูกค้าทั้งหมด", 
@@ -165,14 +165,14 @@ export default function AdminDashboard() {
           link: '/admin/order'
         });
       }
-      if (res.data.waitingPayments > 0) {
-        newAlerts.push({
-          type: 'error',
-          message: `มีการชำระเงิน ${res.data.waitingPayments} รายการรอตรวจสอบ`,
-          action: 'ตรวจสอบการชำระ',
-          link: '/admin/payment'
-        });
-      }
+      // if (res.data.waitingPayments > 0) {
+      //   newAlerts.push({
+      //     type: 'error',
+      //     message: `มีการชำระเงิน ${res.data.waitingPayments} รายการรอตรวจสอบ`,
+      //     action: 'ตรวจสอบการชำระ',
+      //     link: '/admin/payment'
+      //   });
+      // }
       
       setAlerts(newAlerts);
       setLoading(false);

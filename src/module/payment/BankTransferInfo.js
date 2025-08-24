@@ -2,6 +2,7 @@
 "use client";
 import { useState } from "react";
 import { Copy, Check, CreditCard } from "lucide-react";
+import { WarningFilled } from "@ant-design/icons";
 
 export default function BankTransferInfo({ amount, orderId }) {
   const [copied, setCopied] = useState(null);
@@ -138,7 +139,7 @@ export default function BankTransferInfo({ amount, orderId }) {
 
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <h4 className="font-semibold text-red-800 mb-2">
-            ⚠️ ข้อควรระวัง:
+            <WarningFilled/> ข้อควรระวัง:
           </h4>
           <ul className="text-sm text-red-700 space-y-1 list-disc list-inside">
             <li>ตรวจสอบเลขที่บัญชีให้ถูกต้องก่อนโอน</li>

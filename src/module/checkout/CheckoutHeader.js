@@ -45,14 +45,14 @@ export default function CheckoutHeader({ onBack }) {
       </div>
 
       {/* Security Badge */}
-      <div className="flex items-center">
+      {/* <div className="flex items-center">
         <div className="flex items-center text-green-600 text-xs">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
             <path d="M208,40H48A16,16,0,0,0,32,56V200a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V56A16,16,0,0,0,208,40ZM128,168a12,12,0,1,1,12-12A12,12,0,0,1,128,168Zm8-36V132a8,8,0,0,1-16,0v0a8,8,0,0,1,8-8,20,20,0,1,0-20-20,8,8,0,0,1-16,0,36,36,0,1,1,44,35.14Z"/>
           </svg>
           <span className="ml-1">Secure</span>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
