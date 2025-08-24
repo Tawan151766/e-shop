@@ -10,6 +10,8 @@ export default function AdminProductManager() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState({});
   const [form] = Form.useForm();
   const [search, setSearch] = useState("");
 
@@ -17,9 +19,12 @@ export default function AdminProductManager() {
     setLoading(true);
     try {
       const res = await axios.get("/api/admin/product");
-      setProducts(res.data);
+      setProducts(res.data || []);
     } catch (e) {
-      message.error("โหลดข้อมูลสินค้าไม่สำเร็จ");
+      const errorMessage = e.response?.data?.error || "โหลดข้อมูลสินค้าไม่สำเร็จ";
+      message.error(errorMessage);
+      console.error("Fetch products error:", e);
+      setProducts([]);
     }
     setLoading(false);
   };
@@ -27,9 +32,12 @@ export default function AdminProductManager() {
   const fetchCategories = async () => {
     try {
       const res = await axios.get("/api/admin/category");
-      setCategories(res.data);
+      setCategories(res.data || []);
     } catch (e) {
-      message.error("โหลดข้อมูลหมวดหมู่ไม่สำเร็จ");
+      const errorMessage = e.response?.data?.error || "โหลดข้อมูลหมวดหมู่ไม่สำเร็จ";
+      message.error(errorMessage);
+      console.error("Fetch categories error:", e);
+      setCategories([]);
     }
   };
 
@@ -60,31 +68,44 @@ export default function AdminProductManager() {
   };
 
   const handleDelete = async (id) => {
+    setDeleteLoading(prev => ({ ...prev, [id]: true }));
     try {
-      await axios.delete(`/api/admin/product/${id}`);
-      message.success("ลบสินค้าสำเร็จ");
+      const response = await axios.delete(`/api/admin/product/${id}`);
+      message.success(response.data.message || "ลบสินค้าสำเร็จ");
       fetchProducts();
     } catch (e) {
-      message.error("ลบสินค้าไม่สำเร็จ");
+      const errorMessage = e.response?.data?.error || "ลบสินค้าไม่สำเร็จ";
+      message.error(errorMessage);
+      console.error("Delete product error:", e);
+    } finally {
+      setDeleteLoading(prev => ({ ...prev, [id]: false }));
     }
   };
 
   const handleOk = async () => {
+    setSaveLoading(true);
     try {
       const values = await form.validateFields();
+      let response;
+      
       if (editMode && editingId) {
-        await axios.patch(`/api/admin/product/${editingId}`, values);
-        message.success("แก้ไขสินค้าสำเร็จ");
+        response = await axios.patch(`/api/admin/product/${editingId}`, values);
+        message.success(response.data.message || "แก้ไขสินค้าสำเร็จ");
       } else {
-        await axios.post("/api/admin/product", values);
+        response = await axios.post("/api/admin/product", values);
         message.success("เพิ่มสินค้าสำเร็จ");
       }
+      
       setModalOpen(false);
       setEditMode(false);
       setEditingId(null);
       fetchProducts();
     } catch (e) {
-      message.error(editMode ? "แก้ไขสินค้าไม่สำเร็จ" : "เพิ่มสินค้าไม่สำเร็จ");
+      const errorMessage = e.response?.data?.error || (editMode ? "แก้ไขสินค้าไม่สำเร็จ" : "เพิ่มสินค้าไม่สำเร็จ");
+      message.error(errorMessage);
+      console.error("Save product error:", e);
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -144,12 +165,18 @@ export default function AdminProductManager() {
           <span style={{ color: '#476d9e', fontWeight: 700 }}>|</span>
           <Popconfirm
             title="ยืนยันการลบสินค้านี้?"
+            description="การลบสินค้าจะไม่สามารถกู้คืนได้"
             onConfirm={() => handleDelete(record.id)}
             okText="Delete"
             cancelText="Cancel"
-            okButtonProps={{ danger: true }}
+            okButtonProps={{ danger: true, loading: deleteLoading[record.id] }}
           >
-            <Button type="link" style={{ color: '#476d9e', fontWeight: 700, padding: 0 }} danger>
+            <Button 
+              type="link" 
+              style={{ color: '#476d9e', fontWeight: 700, padding: 0 }} 
+              danger
+              loading={deleteLoading[record.id]}
+            >
               Delete
             </Button>
           </Popconfirm>
@@ -211,9 +238,15 @@ export default function AdminProductManager() {
         title={editMode ? "แก้ไขสินค้า" : "เพิ่มสินค้า"}
         open={modalOpen}
         onOk={handleOk}
-        onCancel={() => { setModalOpen(false); setEditMode(false); setEditingId(null); }}
+        onCancel={() => { 
+          setModalOpen(false); 
+          setEditMode(false); 
+          setEditingId(null);
+          setSaveLoading(false);
+        }}
         okText="บันทึก"
         cancelText="ยกเลิก"
+        confirmLoading={saveLoading}
         destroyOnClose
       >
         <Form form={form} layout="vertical">

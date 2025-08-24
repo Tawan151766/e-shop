@@ -1,5 +1,5 @@
 "use client";
-import { Layout, Menu, Spin } from "antd";
+import { Layout, Menu, Spin, Button } from "antd";
 import {
   AppstoreOutlined,
   TagsOutlined,
@@ -10,12 +10,14 @@ import {
   LogoutOutlined,
   FileImageOutlined,
   StockOutlined,
+  MenuUnfoldOutlined,
+  MenuFoldOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const { Sider, Content } = Layout;
+const { Sider, Content, Header } = Layout;
 
 const adminMenu = [
   {
@@ -65,6 +67,15 @@ export default function AdminLayout({ children }) {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    // โหลดสถานะ collapsed จาก localStorage
+    const savedCollapsed = localStorage.getItem("adminSidebarCollapsed");
+    if (savedCollapsed !== null) {
+      setCollapsed(JSON.parse(savedCollapsed));
+    }
+  }, []);
 
   useEffect(() => {
     // ถ้าเป็นหน้า login ไม่ต้องตรวจสอบ authentication
@@ -99,6 +110,13 @@ export default function AdminLayout({ children }) {
     router.push("/admin/login");
   };
 
+  const toggleCollapsed = () => {
+    const newCollapsed = !collapsed;
+    setCollapsed(newCollapsed);
+    // บันทึกสถานะลง localStorage
+    localStorage.setItem("adminSidebarCollapsed", JSON.stringify(newCollapsed));
+  };
+
   // Update logout menu item to have onClick handler
   const adminMenuWithLogout = adminMenu.map((item) => {
     if (item.key === "logout") {
@@ -106,7 +124,7 @@ export default function AdminLayout({ children }) {
         ...item,
         label: (
           <span onClick={handleLogout} style={{ cursor: "pointer" }}>
-            ออกจากระบบ
+            {collapsed ? "" : "ออกจากระบบ"}
           </span>
         ),
       };
@@ -135,28 +153,80 @@ export default function AdminLayout({ children }) {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <Sider width={220} style={{ background: "#fff" }} breakpoint="lg">
+      <Sider
+        width={220}
+        collapsedWidth={80}
+        collapsed={collapsed}
+        onCollapse={setCollapsed}
+        style={{ 
+          background: "#fff",
+          boxShadow: "2px 0 8px 0 rgba(29,35,41,.05)",
+        }}
+        breakpoint="lg"
+        collapsible={false} // ปิดการ auto collapse บน breakpoint
+      >
         <div
           style={{
             height: 64,
-            margin: 16,
+            margin: collapsed ? "16px 8px" : 16,
             fontWeight: 700,
-            fontSize: 22,
+            fontSize: collapsed ? 14 : 22,
             textAlign: "center",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.3s",
           }}
         >
-          Admin Panel
+          {collapsed ? "AP" : "Admin Panel"}
         </div>
         <Menu
           mode="inline"
           selectedKeys={[pathname]}
           items={adminMenuWithLogout}
           style={{ borderRight: 0 }}
+          inlineCollapsed={collapsed}
         />
       </Sider>
       <Layout>
+        <Header
+          style={{
+            padding: "0 16px",
+            background: "#fff",
+            borderBottom: "1px solid #f0f0f0",
+            display: "flex",
+            alignItems: "center",
+            boxShadow: "0 1px 4px rgba(0,21,41,.08)",
+          }}
+        >
+          <Button
+            type="text"
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={toggleCollapsed}
+            style={{
+              fontSize: "16px",
+              width: 64,
+              height: 64,
+            }}
+          />
+          <div
+            style={{
+              flex: 1,
+              textAlign: "right",
+              fontSize: 14,
+              color: "#666",
+            }}
+          >
+            ระบบจัดการผู้ดูแล
+          </div>
+        </Header>
         <Content
-          style={{ margin: 0, background: "#f0f2f5", minHeight: "100vh" }}
+          style={{ 
+            margin: 0, 
+            background: "#f0f2f5", 
+            minHeight: "calc(100vh - 64px)",
+            transition: "all 0.3s",
+          }}
         >
           <div style={{ padding: 24 }}>{children}</div>
         </Content>
