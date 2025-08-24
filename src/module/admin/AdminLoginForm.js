@@ -14,15 +14,21 @@ export default function AdminLoginForm() {
     try {
       const res = await axios.post("/api/admin/login", values);
       if (res.data && res.data.sessionId) {
+        // เก็บ session ใน localStorage และ cookie
         localStorage.setItem("adminSessionId", res.data.sessionId);
-        message.success("Login success!");
+
+        // เก็บใน cookie เพื่อให้ middleware ตรวจสอบได้
+        document.cookie = `adminSessionId=${res.data.sessionId}; path=/; max-age=86400`; // 24 hours
+
+        message.success("เข้าสู่ระบบสำเร็จ!");
         window.location.href = "/admin/dashboard";
       } else {
-        setError("Login failed: Invalid response");
+        setError("เข้าสู่ระบบไม่สำเร็จ: ข้อมูลไม่ถูกต้อง");
       }
     } catch (err) {
       setError(
-        err.response?.data?.error || "Login failed: Internal server error"
+        err.response?.data?.error ||
+          "เข้าสู่ระบบไม่สำเร็จ: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์"
       );
     }
     setLoading(false);

@@ -13,6 +13,11 @@ export default function FooterTab() {
 
   const isActive = (path) => pathname === path;
 
+  // ไม่แสดง FooterTab ในหน้า admin
+  if (pathname.startsWith("/admin")) {
+    return null;
+  }
+
   // ดึงจำนวนสินค้าในตะกร้า
   useEffect(() => {
     if (session) {
@@ -291,7 +296,6 @@ export default function FooterTab() {
           </p>
         </motion.button>
       </div>
-      <div className="h-5 bg-white"></div>
     </div>
   );
 }
