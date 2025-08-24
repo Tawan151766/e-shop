@@ -1,7 +1,10 @@
+
 "use client";
 import { useEffect, useState } from "react";
 import ProductGalleryAdmin from "@/module/admin/ProductGalleryAdmin";
 import axios from "axios";
+import { Typography, Select, Spin, Card } from "antd";
+
 
 export default function ProductGalleryAdminPage() {
   const [products, setProducts] = useState([]);
@@ -16,32 +19,44 @@ export default function ProductGalleryAdminPage() {
   }, []);
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">จัดการอัลบั้มรูปสินค้า</h1>
+    <Card
+      style={{ width: '100%', maxWidth: 1200, minHeight: '100vh', margin: '0 auto', borderRadius: 16, boxShadow: '0 2px 16px #0001', padding: 0 }}
+      bodyStyle={{ padding: 32 }}
+      bordered
+    >
+      <Typography.Title level={2} style={{ marginBottom: 24 }}>
+        จัดการอัลบั้มรูปสินค้า
+      </Typography.Title>
       {loading ? (
-        <div>Loading...</div>
+        <Spin tip="Loading..." />
       ) : (
         <>
-          <div className="mb-4">
-            <label className="block mb-1 font-medium">เลือกรายการสินค้า</label>
-            <select
-              className="border px-2 py-1 rounded min-w-[200px]"
-              value={selectedId || ""}
-              onChange={e => setSelectedId(e.target.value || null)}
+          <div style={{ marginBottom: 24 }}>
+            <Typography.Text strong>เลือกรายการสินค้า</Typography.Text>
+            <br />
+            <Select
+              showSearch
+              placeholder="-- เลือกสินค้า --"
+              style={{ minWidth: 240, marginTop: 8 }}
+              value={selectedId || undefined}
+              onChange={v => setSelectedId(v)}
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+              }
             >
-              <option value="">-- เลือกสินค้า --</option>
               {products.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+                <Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>
               ))}
-            </select>
+            </Select>
           </div>
           {selectedId ? (
             <ProductGalleryAdmin productId={Number(selectedId)} />
           ) : (
-            <div className="text-gray-500">กรุณาเลือกสินค้าที่ต้องการจัดการอัลบั้มรูป</div>
+            <Typography.Text type="secondary">กรุณาเลือกสินค้าที่ต้องการจัดการอัลบั้มรูป</Typography.Text>
           )}
         </>
       )}
-    </div>
+    </Card>
   );
 }

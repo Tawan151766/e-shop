@@ -8,6 +8,7 @@ import {
   CreditCardOutlined,
   TruckOutlined,
   LogoutOutlined,
+  FileImageOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -32,24 +33,19 @@ const adminMenu = [
     label: <Link href="/admin/product">สินค้า</Link>,
   },
   {
+    key: "/admin/product-galleries",
+    icon: <FileImageOutlined />,
+    label: <Link href="/admin/product-galleries">แกลเลอรีสินค้า</Link>,
+  },
+  {
     key: "/admin/promotion",
     icon: <PercentageOutlined />,
     label: <Link href="/admin/promotion">โปรโมชั่น</Link>,
   },
   {
-    key: "/admin/payment",
-    icon: <CreditCardOutlined />,
-    label: <Link href="/admin/payment">การชำระเงิน</Link>,
-  },
-  {
     key: "/admin/order",
     icon: <ShoppingOutlined />,
     label: <Link href="/admin/order">คำสั่งซื้อ</Link>,
-  },
-  {
-    key: "/admin/shipping",
-    icon: <TruckOutlined />,
-    label: <Link href="/admin/shipping">การจัดส่ง</Link>,
   },
   {
     key: "logout",
@@ -92,16 +88,21 @@ export default function AdminLayout({ children }) {
   const handleLogout = () => {
     // ลบ session จาก localStorage และ cookie
     localStorage.removeItem("adminSessionId");
-    document.cookie = "adminSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie =
+      "adminSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     router.push("/admin/login");
   };
 
   // Update logout menu item to have onClick handler
-  const adminMenuWithLogout = adminMenu.map(item => {
+  const adminMenuWithLogout = adminMenu.map((item) => {
     if (item.key === "logout") {
       return {
         ...item,
-        label: <span onClick={handleLogout} style={{ cursor: "pointer" }}>ออกจากระบบ</span>
+        label: (
+          <span onClick={handleLogout} style={{ cursor: "pointer" }}>
+            ออกจากระบบ
+          </span>
+        ),
       };
     }
     return item;
@@ -109,12 +110,14 @@ export default function AdminLayout({ children }) {
 
   if (loading) {
     return (
-      <div style={{ 
-        minHeight: "100vh", 
-        display: "flex", 
-        alignItems: "center", 
-        justifyContent: "center" 
-      }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <Spin size="large" />
       </div>
     );
